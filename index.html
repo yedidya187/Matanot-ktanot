@@ -392,29 +392,39 @@ to{width:100%}}
 </div>
 
 <!-- EDIT MODAL -->
-<div id="edit-overlay" class="eoverlay hidden" onclick="if(event.target===this)confirmCloseEdit()">
+<div id="edit-overlay" class="eoverlay hidden">
   <div class="emodal">
-    <button class="eclose" onclick="closeEdit()">&#10005;</button>
+    <button class="eclose" onclick="window.closeEdit()">&#10005;</button>
     <h3 id="edit-title">עריכת פריט</h3>
-    <div class="img-prev"><img id="edit-img-el" src="" style="display:none"/><span id="edit-no-img">אין תמונה</span></div>
+    <div class="img-prev" id="edit-img-wrap">
+      <img id="edit-img-el" src="" style="display:none;width:100%;height:100%;object-fit:cover"/>
+      <span id="edit-no-img">אין תמונה</span>
+    </div>
     <div class="img-btns">
       <button class="img-btn" onclick="document.getElementById('edit-file-input').click()">&#128247; העלאת קובץ</button>
-      <button class="img-btn" onclick="promptImgUrl()">&#128279; קישור URL</button>
-      <button class="img-btn del" onclick="clearEditImg()">מחיקת תמונה</button>
+      <button class="img-btn" onclick="window.promptImgUrl()">קישור URL</button>
+      <button class="img-btn del" onclick="window.clearEditImg()">מחיקת תמונה</button>
     </div>
-    <input type="file" id="edit-file-input" accept="image/*" style="display:none" onchange="handleEditFile(event)"/>
-    <div class="fg"><label>שם הפריט</label><input id="edit-name"/></div>
+    <input type="file" id="edit-file-input" accept="image/*" style="display:none" onchange="window.handleEditFile(event)"/>
+    <div class="fg"><label>שם הפריט</label><input id="edit-name" placeholder="שם..."/></div>
     <div class="fg"><label>קטגוריה</label>
-      <select id="edit-cat" onchange="onEditCatChange()">
-        <option>פותחים קופסא</option><option>בין השורות</option><option>דייט על קלף</option><option>המיוחדים שלנו</option>
+      <select id="edit-cat" onchange="window.onEditCatChange()">
+        <option>פותחים קופסא</option>
+        <option>בין השורות</option>
+        <option>דייט על קלף</option>
+        <option>המיוחדים שלנו</option>
       </select>
     </div>
     <div class="fg"><label>תיאור</label><textarea id="edit-desc" style="min-height:70px"></textarea></div>
     <div id="edit-kit-fields" class="hidden">
-      <div class="fg"><label>&#9989; אנחנו כבר דאגנו ל...</label><textarea id="edit-kitwe" style="min-height:60px" placeholder="מה כלול בערכה"></textarea></div>
-      <div class="fg"><label>&#127968; עוד קצת השקעה מהבית</label><textarea id="edit-kityou" style="min-height:60px" placeholder="מה המשתמש צריך להביא"></textarea></div>
+      <div class="fg"><label>&#9989; אנחנו כבר דאגנו ל...</label>
+        <textarea id="edit-kitwe" style="min-height:60px" placeholder="מה כלול בערכה"></textarea>
+      </div>
+      <div class="fg"><label>&#127968; עוד קצת השקעה מהבית</label>
+        <textarea id="edit-kityou" style="min-height:60px" placeholder="מה המשתמש צריך להביא"></textarea>
+      </div>
     </div>
-    <button class="save-btn" id="edit-save-btn" onclick="saveEdit()">שמירת שינויים &#10003;</button>
+    <button class="save-btn" id="edit-save-btn" onclick="window.saveEdit()">שמירה &#10003;</button>
   </div>
 </div>
 
@@ -744,6 +754,11 @@ window.handleEditFile=handleEditFile;
 window.promptImgUrl=promptImgUrl;
 window.clearEditImg=clearEditImg;
 window.onEditCatChange=onEditCatChange;
+
+// Click outside edit modal
+document.getElementById('edit-overlay').addEventListener('click',function(e){
+  if(e.target===this) window.confirmCloseEdit();
+});
 
 </script>
 </body>
