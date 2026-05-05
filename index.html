@@ -16,7 +16,7 @@
   --border:#D8CEBA;--white:#FEFAF3;
 }
 html{direction:rtl;scroll-behavior:smooth}
-body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var(--text);min-height:100vh}
+body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var(--text);min-height:100vh;font-size:17px}
 
 /* NAV */
 .nav{background:var(--paper);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:62px;position:sticky;top:0;z-index:300;box-shadow:0 2px 14px rgba(58,120,96,.07)}
@@ -39,7 +39,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .deco{position:absolute;opacity:.15;pointer-events:none;font-size:3.5rem}
 .logo-img{width:220px;height:220px;object-fit:contain;display:block;margin:0 auto 1.2rem}
 .hero h1{font-family:'SiteFont','Heebo',sans-serif;font-size:clamp(1.7rem,3.5vw,2.4rem);color:var(--teal-dark);margin-bottom:.9rem}
-.hero p{color:var(--text-mid);font-size:1rem;max-width:520px;margin:0 auto 1.8rem;line-height:1.85;font-weight:300}
+.hero p{color:var(--text-mid);font-size:1.08rem;max-width:520px;margin:0 auto 1.8rem;line-height:1.85;font-weight:300}
 .hero p strong{color:var(--teal-dark);font-weight:700}
 .btn-hero{display:inline-block;background:var(--teal);color:#fff;border:none;padding:.82rem 2.2rem;border-radius:.6rem;font-family:'SiteFont','Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all .22s;box-shadow:0 4px 18px rgba(74,158,126,.33)}
 .btn-hero:hover{background:var(--teal-dark);transform:translateY(-2px)}
@@ -66,7 +66,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .card-body{padding:1.1rem 1.2rem 1.3rem}
 .cbadge{display:inline-block;font-size:.72rem;font-weight:700;padding:.17rem .6rem;border-radius:2rem;background:var(--teal-light);color:var(--teal-dark);margin-bottom:.6rem}
 .cname{font-family:'SiteFont','Heebo',sans-serif;font-size:1.08rem;color:var(--text);margin-bottom:.3rem}
-.cdesc{font-size:.82rem;color:var(--text-mid);line-height:1.5;margin-bottom:.8rem;font-weight:300}
+.cdesc{font-size:.88rem;color:var(--text-mid);line-height:1.5;margin-bottom:.8rem;font-weight:300}
 .sdot{display:inline-flex;align-items:center;gap:.35rem;font-size:.77rem;font-weight:700;margin-bottom:.7rem}
 .sdot::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
 .sdot.av{color:#2E8A58}.sdot.tk{color:#A0602A}.sdot.soon{color:#B07A20}
@@ -353,7 +353,7 @@ to{width:100%}}
       <div id="admin-items" class="hidden">
         <div class="asec" style="display:flex;align-items:center;justify-content:space-between">
           <h3 id="items-title">פריטים (0)</h3>
-          <button class="addbtn" onclick="openEdit(-1)">&#10133; פריט חדש</button>
+          <button class="addbtn" onclick="openEdit('-1')">&#10133; פריט חדש</button>
         </div>
         <div class="asec" style="padding:.5rem 0 0;border:none;background:none;margin:0">
           <div id="items-admin-list" class="iadmin"></div>
@@ -392,7 +392,7 @@ to{width:100%}}
 </div>
 
 <!-- EDIT MODAL -->
-<div id="edit-overlay" class="eoverlay hidden" onclick="if(event.target===this)closeEdit()">
+<div id="edit-overlay" class="eoverlay hidden" onclick="if(event.target===this)confirmCloseEdit()">
   <div class="emodal">
     <button class="eclose" onclick="closeEdit()">&#10005;</button>
     <h3>עריכת פריט</h3>
@@ -665,6 +665,21 @@ function refreshEditImgPreview(){
   else{img.style.display='none';noimg.style.display='flex';}
 }
 function closeEdit(){document.getElementById('edit-overlay').classList.add('hidden');document.body.style.overflow='';}
+function confirmCloseEdit(){
+  const name=document.getElementById('edit-name').value.trim();
+  if(!name){closeEdit();return;}
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;background:rgba(42,38,32,.7);z-index:700;display:flex;align-items:center;justify-content:center;padding:1rem';
+  d.innerHTML=`<div style="background:var(--white);border-radius:1rem;padding:2rem;max-width:320px;width:100%;text-align:center;font-family:'SiteFont','Heebo',sans-serif">
+    <div style="font-size:2rem;margin-bottom:.75rem">&#128337;</div>
+    <p style="font-size:1rem;color:var(--text);margin-bottom:1.5rem;line-height:1.6">שינויים לא נשמרו.<br/>מה לעשות?</p>
+    <div style="display:flex;gap:.75rem;justify-content:center">
+      <button onclick="saveEdit();this.closest('div[style]').remove()" style="padding:.7rem 1.4rem;background:var(--teal);color:#fff;border:none;border-radius:.5rem;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.95rem;font-weight:600">שמור</button>
+      <button onclick="closeEdit();this.closest('div[style]').remove()" style="padding:.7rem 1.4rem;background:none;border:1.5px solid var(--border);border-radius:.5rem;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.95rem">סגור בלי שמירה</button>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+}
 function handleEditFile(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -723,6 +738,7 @@ window.returnLoan=returnLoan;
 window.removeItem=removeItem;
 window.openEdit=openEdit;
 window.closeEdit=closeEdit;
+window.confirmCloseEdit=confirmCloseEdit;
 window.saveEdit=saveEdit;
 window.handleEditFile=handleEditFile;
 window.promptImgUrl=promptImgUrl;
