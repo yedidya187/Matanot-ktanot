@@ -353,7 +353,7 @@ to{width:100%}}
       <div id="admin-items" class="hidden">
         <div class="asec" style="display:flex;align-items:center;justify-content:space-between">
           <h3 id="items-title">פריטים (0)</h3>
-          <button class="addbtn" onclick="openEdit('-1')">&#10133; פריט חדש</button>
+          <button class="addbtn" id="btn-new-item">&#10133; פריט חדש</button>
         </div>
         <div class="asec" style="padding:.5rem 0 0;border:none;background:none;margin:0">
           <div id="items-admin-list" class="iadmin"></div>
@@ -754,6 +754,10 @@ window.handleEditFile=handleEditFile;
 window.promptImgUrl=promptImgUrl;
 window.clearEditImg=clearEditImg;
 window.onEditCatChange=onEditCatChange;
+
+// New item button
+const btnNew = document.getElementById('btn-new-item');
+if(btnNew) btnNew.addEventListener('click', function(){ openEdit('-1'); });
 
 // Click outside edit modal
 document.getElementById('edit-overlay').addEventListener('click',function(e){
