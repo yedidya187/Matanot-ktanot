@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>מתנות קטנות</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+@font-face {font-family:'SiteFont';src:url('font.woff2') format('woff2'),url('font.woff') format('woff');font-weight:normal;font-style:normal;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#4A9E7E;--teal-dark:#3A7860;--teal-light:#EAF5F0;--teal-mid:#BEE0D4;
+  --lav:#9B8EC4;--lav-light:#EDE9F7;
+  --cream:#F4EDE0;--cream-warm:#EBE0CB;--paper:#FAF5EB;
+  --text:#2A2620;--text-mid:#6A6055;--text-light:#9C9082;
+  --border:#D8CEBA;--white:#FEFAF3;
+}
+html{direction:rtl;scroll-behavior:smooth}
+body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var(--text);min-height:100vh;font-size:17px}
+
+/* NAV */
+.nav{background:var(--paper);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:62px;position:sticky;top:0;z-index:300;box-shadow:0 2px 14px rgba(58,120,96,.07)}
+.nav-brand{font-family:'SiteFont','Heebo',sans-serif;font-size:1.2rem;color:var(--teal-dark);font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.4rem;text-decoration:none}
+.nav-brand span{color:var(--lav)}
+.nav-links{display:flex;gap:.5rem;list-style:none}
+.nav-btn{background:none;border:none;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.93rem;color:var(--text-mid);padding:.35rem .7rem;border-radius:.4rem;transition:all .2s}
+.nav-btn:hover,.nav-btn.on{color:var(--teal-dark);background:var(--teal-light);font-weight:600}
+
+/* FOOTER */
+.footer{background:var(--teal-dark);padding:.85rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.footer-text{color:rgba(255,255,255,.72);font-family:'SiteFont','Heebo',sans-serif;font-size:.82rem}
+.footer-text strong{color:#fff;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem}
+.footer-admin-btn{background:none;border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.38);font-family:'SiteFont','Heebo',sans-serif;font-size:.7rem;padding:.25rem .7rem;border-radius:2rem;cursor:pointer;transition:all .2s}
+.footer-admin-btn:hover{border-color:rgba(255,255,255,.5);color:rgba(255,255,255,.7)}
+
+/* HERO */
+.hero{background:linear-gradient(155deg,var(--paper) 0%,var(--cream) 55%,var(--cream-warm) 100%);padding:3rem 1.5rem 2.5rem;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 65% 45% at 50% 5%,rgba(74,158,126,.09) 0%,transparent 70%)}
+.deco{position:absolute;opacity:.15;pointer-events:none;font-size:3.5rem}
+.logo-img{width:220px;height:220px;object-fit:contain;display:block;margin:0 auto 1.2rem}
+.hero h1{font-family:'SiteFont','Heebo',sans-serif;font-size:clamp(1.7rem,3.5vw,2.4rem);color:var(--teal-dark);margin-bottom:.9rem}
+.hero p{color:var(--text-mid);font-size:1.08rem;max-width:520px;margin:0 auto 1.8rem;line-height:1.85;font-weight:300}
+.hero p strong{color:var(--teal-dark);font-weight:700}
+.btn-hero{display:inline-block;background:var(--teal);color:#fff;border:none;padding:.82rem 2.2rem;border-radius:.6rem;font-family:'SiteFont','Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all .22s;box-shadow:0 4px 18px rgba(74,158,126,.33)}
+.btn-hero:hover{background:var(--teal-dark);transform:translateY(-2px)}
+
+/* ABOUT PAGE */
+.about-page{max-width:680px;margin:0 auto;padding:5rem 1.5rem;text-align:center}
+
+/* CATALOG */
+.catalog{max-width:1080px;margin:0 auto;padding:2.5rem 1.5rem}
+.cat-head{margin-bottom:1.5rem;text-align:center}
+.cat-head h2{font-family:'SiteFont','Heebo',sans-serif;font-size:1.5rem;color:var(--teal-dark);margin-bottom:.9rem}
+.filters{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;justify-content:center;}
+.filters::-webkit-scrollbar{height:2px}
+.filters::-webkit-scrollbar-thumb{background:var(--teal-mid);border-radius:2px}
+.fb-cat{background:none;border:1.5px solid var(--teal-mid);padding:.35rem .95rem;border-radius:2rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.85rem;color:var(--teal-dark);cursor:pointer;transition:all .2s;font-weight:500;white-space:nowrap;flex-shrink:0}
+.fb-cat:hover,.fb-cat.on{border-color:var(--teal);background:var(--teal);color:#fff;font-weight:700}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.25rem}
+.card{background:var(--white);border:1px solid var(--border);border-radius:1rem;overflow:hidden;transition:all .25s;cursor:pointer}
+.card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(58,120,96,.12);border-color:var(--teal-mid)}
+.card.dim{opacity:.62}
+.card-img{width:100%;height:160px;object-fit:cover;background:var(--teal-light)}
+.card-body{padding:1.1rem 1.2rem 1.3rem}
+.cbadge{display:inline-block;font-size:.72rem;font-weight:700;padding:.17rem .6rem;border-radius:2rem;background:var(--teal-light);color:var(--teal-dark);margin-bottom:.6rem}
+.cname{font-family:'SiteFont','Heebo',sans-serif;font-size:1.08rem;color:var(--text);margin-bottom:.3rem}
+.cdesc{font-size:.88rem;color:var(--text-mid);line-height:1.5;margin-bottom:.8rem;font-weight:300}
+.sdot{display:inline-flex;align-items:center;gap:.35rem;font-size:.77rem;font-weight:700;margin-bottom:.7rem}
+.sdot::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.sdot.av{color:#2E8A58}.sdot.tk{color:#A0602A}.sdot.soon{color:#B07A20}
+.bbtn{width:100%;padding:.6rem;border-radius:.5rem;background:var(--teal);color:#fff;border:none;font-family:'SiteFont','Heebo',sans-serif;font-size:.89rem;font-weight:700;cursor:pointer;transition:background .2s}
+.bbtn:hover{background:var(--teal-dark)}
+.bbtn:disabled{background:var(--cream-warm);color:var(--text-light);cursor:not-allowed}
+
+/* ITEM DETAIL MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(42,38,32,.55);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
+.modal{background:var(--white);border-radius:1.25rem;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(42,38,32,.22)}
+.modal-img{width:100%;height:220px;object-fit:cover;border-radius:1.25rem 1.25rem 0 0;background:var(--teal-light)}
+.modal-body{padding:1.75rem}
+.modal-body h2{font-family:'SiteFont','Heebo',sans-serif;font-size:1.5rem;color:var(--teal-dark);margin-bottom:.35rem}
+.modal-body .mdesc{color:var(--text-mid);font-size:.95rem;line-height:1.75;margin-bottom:1.25rem;font-weight:300}
+.kit-section{background:var(--teal-light);border-radius:.75rem;padding:1rem 1.25rem;margin-bottom:.85rem;border-right:4px solid var(--teal)}
+.kit-section h4{font-family:'SiteFont','Heebo',sans-serif;font-size:1rem;color:var(--teal-dark);margin-bottom:.5rem}
+.kit-section p{font-size:.88rem;color:var(--text-mid);line-height:1.6;font-weight:300}
+.kit-section.orange{background:#FDF0E8;border-right-color:#D4824A}
+.kit-section.orange h4{color:#D4824A}
+.modal-close{position:absolute;top:1rem;left:1rem;background:rgba(255,255,255,.85);border:none;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.modal-borrow-btn{width:100%;padding:.88rem;background:var(--teal);color:#fff;border:none;border-radius:.6rem;font-family:'SiteFont','Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-top:1.25rem;transition:all .2s;box-shadow:0 4px 16px rgba(74,158,126,.28)}
+.modal-borrow-btn:hover{background:var(--teal-dark)}
+.modal-borrow-btn:disabled{background:var(--cream-warm);color:var(--text-light);cursor:not-allowed;box-shadow:none}
+.modal-relative{position:relative}
+
+/* BORROW */
+.bsec{background:var(--teal-light);border-top:1.5px solid var(--teal-mid);padding:3rem 1.5rem}
+.binner{max-width:540px;margin:0 auto}
+.binner h2{font-family:'SiteFont','Heebo',sans-serif;font-size:1.45rem;color:var(--teal-dark);margin-bottom:.35rem}
+.sub{color:var(--text-mid);font-size:.88rem;margin-bottom:1.5rem}
+.bpreview{display:flex;align-items:center;gap:1rem;background:var(--white);border:1px solid var(--teal-mid);border-radius:.75rem;padding:1rem 1.25rem;margin-bottom:1.75rem}
+.bpreview .bi{font-size:2rem}
+.bpreview strong{font-family:'SiteFont','Heebo',sans-serif;font-size:1.05rem;color:var(--teal-dark);display:block}
+.bpreview span{font-size:.83rem;color:var(--text-mid)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.fg{margin-bottom:.95rem}
+.fg label{display:block;font-size:.83rem;font-weight:700;color:var(--text);margin-bottom:.35rem}
+.fg input,.fg textarea,.fg select{width:100%;padding:.68rem .95rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.93rem;color:var(--text);background:var(--white);outline:none;direction:rtl;transition:border-color .2s}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--teal)}
+.fg textarea{resize:vertical;min-height:66px}
+.dnote{font-size:.76rem;color:var(--text-light);margin-top:.28rem}
+.sbtn{width:100%;padding:.88rem;background:var(--teal);color:#fff;border:none;border-radius:.6rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.98rem;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(74,158,126,.28);margin-top:.4rem}
+.sbtn:hover{background:var(--teal-dark)}
+.clnk{text-align:center;margin-top:.9rem}
+.clnk button{background:none;border:none;color:var(--text-light);font-size:.86rem;cursor:pointer;text-decoration:underline;font-family:'SiteFont','Heebo',sans-serif;padding:2.5rem 1rem;color:var(--text-mid)}
+.bprompt .bp-icon{font-size:2.2rem;margin-bottom:.75rem}
+.sbox{text-align:center;padding:2rem 0}
+.sbox .si{font-size:3.2rem;margin-bottom:1rem}
+.sbox h3{font-family:'SiteFont','Heebo',sans-serif;font-size:1.55rem;color:var(--teal-dark);margin-bottom:.5rem}
+.sbox p{color:var(--text-mid);font-size:.93rem;line-height:1.75}
+.sbox .sid{font-weight:700;color:var(--teal);font-size:1.05rem}
+.pickup-box{background:var(--white);border:1px solid var(--teal-mid);border-radius:.75rem;padding:1rem 1.25rem;margin-top:1rem;font-size:.88rem;color:var(--text-mid);line-height:1.7;text-align:right}
+.pickup-box strong{color:var(--teal-dark);display:block;margin-bottom:.3rem;font-size:.95rem}
+
+/* FOOTER */
+.footer{background:var(--teal-dark);padding:.85rem 1.75rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.footer-text{color:rgba(255,255,255,.58);font-size:.82rem}
+.footer-text strong{color:#fff;font-family:'SiteFont','Heebo',sans-serif;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.42);font-family:'SiteFont','Heebo',sans-serif;font-size:.74rem;padding:.26rem .78rem;border-radius:2rem;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.footer-admin-btn:hover{border-color:rgba(255,255,255,.6);color:rgba(255,255,255,.8)}
+
+/* ADMIN */
+.admin-wrap{max-width:900px;margin:0 auto;padding:2rem 1rem}
+.admin-login-box{max-width:340px;margin:4rem auto;text-align:center}
+.admin-login-box h2{font-family:'SiteFont','Heebo',sans-serif;font-size:1.45rem;color:var(--teal-dark);margin-bottom:.4rem}
+.admin-login-box p{color:var(--text-mid);font-size:.88rem;margin-bottom:1.75rem}
+.atabs{display:flex;gap:.4rem;margin-bottom:1.75rem;background:var(--white);padding:.38rem;border-radius:.7rem;border:1px solid var(--border);width:fit-content;max-width:100%;overflow-x:auto}
+.atab{padding:.5rem 1.4rem;border-radius:.5rem;border:none;font-family:'SiteFont','Heebo',sans-serif;font-size:.92rem;cursor:pointer;transition:all .2s;background:none;color:var(--text-mid)}
+.atab.on{background:var(--teal);color:#fff;font-weight:700}
+.asec{background:var(--white);border:1px solid var(--border);border-radius:1rem;padding:1.6rem;margin-bottom:1.4rem}
+.asec h3{font-family:'SiteFont','Heebo',sans-serif;font-size:1.15rem;color:var(--teal-dark);margin-bottom:1.1rem}
+.lrow{display:grid;grid-template-columns:1fr auto;align-items:start;gap:.5rem .75rem;padding:.8rem .95rem;background:var(--cream);border:1px solid var(--border);border-radius:.5rem;margin-bottom:.45rem;font-size:.86rem}
+.lrow .lid{font-weight:700;color:var(--teal);font-size:.82rem}
+.lrow .lname{font-weight:600;grid-column:1}
+.lrow .linfo{color:var(--text-mid);font-size:.79rem;grid-column:1}
+.sbadge{font-size:.72rem;font-weight:700;padding:.18rem .6rem;border-radius:2rem}
+.sbadge.act{background:rgba(74,158,126,.14);color:#2A7A50}
+.sbadge.ret{background:rgba(155,142,196,.14);color:#6252A2}
+.retbtn{padding:.3rem .8rem;border-radius:.4rem;font-size:.78rem;font-weight:700;border:1.5px solid var(--teal);color:var(--teal);background:none;cursor:pointer;transition:all .2s}
+.retbtn:hover{background:var(--teal);color:#fff}
+/* items admin list */
+.irow{display:grid;grid-template-columns:42px 1fr auto auto auto;align-items:center;gap:.6rem;padding:.7rem .9rem;background:var(--cream);border:1px solid var(--border);border-radius:.5rem;min-width:0}
+.irow .ithumb{width:42px;height:42px;border-radius:.4rem;object-fit:cover;background:var(--teal-light)}
+.irow .in{font-weight:600;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.irow .ic{display:none}
+.editbtn{padding:.28rem .75rem;border-radius:.4rem;font-size:.78rem;font-weight:700;border:1.5px solid var(--teal);color:var(--teal);background:none;cursor:pointer;transition:all .2s}
+.editbtn:hover{background:var(--teal);color:#fff}
+.delbtn{padding:.28rem .72rem;border-radius:.4rem;font-size:.78rem;font-weight:700;border:1.5px solid #C87055;color:#C87055;background:none;cursor:pointer;transition:all .2s}
+.delbtn:hover{background:#C87055;color:#fff}
+.addform{display:flex;flex-direction:column;gap:.8rem}
+.addrow{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.auchk{display:flex;gap:.9rem;flex-wrap:wrap;margin-top:.25rem}
+.auchk label{display:flex;align-items:center;gap:.35rem;font-size:.88rem;cursor:pointer}
+.auchk input[type=checkbox]{accent-color:var(--teal);width:15px;height:15px}
+.addbtn{padding:.72rem 1.8rem;background:var(--teal);color:#fff;border:none;border-radius:.55rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.93rem;font-weight:700;cursor:pointer;transition:all .2s;align-self:flex-start}
+.addbtn:hover{background:var(--teal-dark)}
+.addflash{color:#2A7A50;font-weight:700;font-size:.88rem;padding:.4rem 0}
+/* EDIT MODAL */
+.eoverlay{position:fixed;inset:0;background:rgba(42,38,32,.6);backdrop-filter:blur(3px);z-index:600;display:flex;align-items:center;justify-content:center;padding:1rem}
+.emodal{background:var(--white);border-radius:1.25rem;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;padding:2rem;position:relative;box-shadow:0 20px 60px rgba(42,38,32,.25)}
+.emodal h3{font-family:'SiteFont','Heebo',sans-serif;font-size:1.3rem;color:var(--teal-dark);margin-bottom:1.4rem}
+.eclose{position:absolute;top:1rem;left:1rem;background:var(--cream);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.img-prev{width:100%;height:155px;border-radius:.75rem;overflow:hidden;background:var(--teal-light);border:1.5px dashed var(--teal-mid);display:flex;align-items:center;justify-content:center;margin-bottom:.6rem;color:var(--text-light);font-size:.9rem}
+.img-prev img{width:100%;height:100%;object-fit:cover}
+.img-btns{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+.img-btn{padding:.4rem .9rem;border-radius:.45rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.83rem;font-weight:600;cursor:pointer;border:1.5px solid var(--teal-mid);color:var(--teal-dark);background:var(--teal-light);transition:all .2s}
+.img-btn:hover{background:var(--teal);color:#fff;border-color:var(--teal)}
+.img-btn.del{border-color:#C87055;color:#C87055;background:none}
+.img-btn.del:hover{background:#C87055;color:#fff}
+.save-btn{width:100%;padding:.85rem;background:var(--teal);color:#fff;border:none;border-radius:.6rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.97rem;font-weight:700;cursor:pointer;margin-top:1rem;box-shadow:0 4px 16px rgba(74,158,126,.28);transition:all .2s}
+.save-btn:hover{background:var(--teal-dark)}
+.iadmin{display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem}
+.empty{text-align:center;padding:2.5rem;color:var(--text-light)}
+.empty .ei{font-size:2.2rem;margin-bottom:.75rem}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes heartPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+@keyframes floatBtn{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+to{width:100%}}
+50%{border-color:transparent}}
+
+.heart-anim{display:inline-block;animation:heartPulse 2.5s ease-in-out infinite}
+.btn-hero{animation:floatBtn 3s ease-in-out infinite}
+.card{opacity:0;animation:fadeUp .5s ease forwards}
+.card:nth-child(1){animation-delay:.05s}
+.card:nth-child(2){animation-delay:.1s}
+.card:nth-child(3){animation-delay:.15s}
+.card:nth-child(4){animation-delay:.2s}
+.card:nth-child(5){animation-delay:.25s}
+.card:nth-child(6){animation-delay:.3s}
+.card:nth-child(7){animation-delay:.35s}
+.card:nth-child(8){animation-delay:.4s}
+.card:nth-child(9){animation-delay:.45s}
+.card:nth-child(10){animation-delay:.5s}
+.card:nth-child(n+11){animation-delay:.55s}
+
+
+.hidden{display:none!important}
+@media(max-width:600px){
+  .frow,.addrow{grid-template-columns:1fr}
+  .nav{padding:0 .75rem}
+  .nav-brand{font-size:1rem}
+  .modal{border-radius:.75rem}
+  .catalog{padding:2rem 1rem}
+  .admin-wrap{padding:1.5rem .85rem}
+  .asec{padding:1.1rem .9rem}
+  .irow{grid-template-columns:36px 1fr auto auto}
+  .irow .ithumb{width:36px;height:36px}
+  .lrow{font-size:.82rem}
+  .retbtn,.editbtn,.delbtn{padding:.25rem .55rem;font-size:.74rem}
+  .sbadge{font-size:.68rem}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-brand" href="#" onclick="showPage('home');return false">
+    <span>&#9829;</span> מתנות <span>קטנות</span>
+  </a>
+  <ul class="nav-links">
+    <li><button class="nav-btn on" id="nav-home" onclick="showPage('home')">ראשי</button></li>
+    <li><button class="nav-btn" id="nav-catalog" onclick="showPage('home');setTimeout(()=>document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'}),80)">תפריט</button></li>
+    <li><button class="nav-btn" id="nav-about" onclick="showPage('about')">אודות</button></li>
+
+  </ul>
+</nav>
+
+<!-- HOME -->
+<div id="page-home">
+  <section class="hero">
+    <div class="deco" style="top:1.5rem;right:2rem;transform:rotate(-18deg)">&#127039;</div>
+    <div class="deco" style="bottom:2rem;left:1.5rem;transform:rotate(14deg);font-size:3rem">&#127043;</div>
+    <img class="logo-img" src="logo.png" alt="מתנות קטנות"/>
+    <h1>מי אנחנו?</h1>
+    <p>
+      גמ"ח להשאלת משחקי זוגיות, ספרים וערכות לדייטים,<br/>
+      <strong>לזכר מתן מימוני ז"ל.</strong><br/>
+      בואו, שווה להעיף מבט :)
+    </p>
+    <button class="btn-hero" onclick="document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'})">לתפריט ↓</button>
+  </section>
+
+  <section class="catalog" id="cat-sec">
+    <div class="cat-head">
+      <h2><span class="typewriter-title">הדייטים שלנו</span> <span class="heart-anim">&#9829;</span></h2>
+      <div class="filters" id="filters">
+        <button class="fb-cat on" onclick="setFilter('הכל',this)">הכל</button>
+        <button class="fb-cat" onclick="setFilter('פותחים קופסא',this)">פותחים קופסא</button>
+        <button class="fb-cat" onclick="setFilter('בין השורות',this)">בין השורות</button>
+        <button class="fb-cat" onclick="setFilter('דייט על קלף',this)">דייט על קלף</button>
+        <button class="fb-cat" onclick="setFilter('המיוחדים שלנו',this)">המיוחדים שלנו</button>
+      </div>
+    </div>
+    <div class="grid" id="items-grid"></div>
+  </section>
+
+  <div class="bsec" id="borrow-sec">
+    <div class="binner">
+      <div id="borrow-prompt" class="bprompt" style="text-align:center">
+        <div class="bp-icon">&#9749;</div>
+        <p>בחרו פריט מהתפריט למעלה כדי לעבור להשאלה</p>
+      </div>
+      <div id="borrow-form-wrap" class="hidden">
+        <h2>טופס השאלה</h2>
+        <p class="sub">מלאו שם וטלפון ואשרו שלקחתם את הפריט</p>
+        <div class="bpreview">
+          <div class="bi" id="preview-icon"></div>
+          <div><strong id="preview-name"></strong><span id="preview-desc"></span></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label>שם</label><input id="f-name" placeholder="שם מלא"/></div>
+          <div class="fg"><label>טלפון</label><input id="f-phone" placeholder="05X-XXXXXXX" type="tel"/></div>
+        </div>
+        <div class="fg" style="background:var(--teal-light);padding:.9rem 1rem;border-radius:.6rem;border:1px solid var(--teal-mid)"><label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;font-size:.9rem"><input type="checkbox" id="f-confirm" style="margin-top:.15rem;accent-color:var(--teal);width:18px;height:18px;flex-shrink:0"/><span>אני מאשר/ת שלקחתי/ת את הפריט ואחזיר/ת אותו בתום השימוש במצב תקין</span></label></div>
+        </div>
+        <div class="fg"><label>הערה (לא חובה)</label><textarea id="f-note" placeholder="כל פרט שחשוב לדעת..."></textarea></div>
+        <button class="sbtn" onclick="submitBorrow()">שליחת בקשה &#128154;</button>
+        <div class="clnk"><button onclick="cancelBorrow()">ביטול</button></div>
+      </div>
+      <div id="borrow-success" class="sbox hidden">
+        <div class="si">&#127881;</div>
+        <h3>ההשאלה אושרה!</h3>
+        <p>מספר בקשה: <span class="sid" id="success-id"></span></p>
+        <div class="pickup-box">
+          <strong>&#128205; איפה נמצא הגמ"ח?</strong>
+          האיסוף מתבצע מארון הגמ"ח שנמצא במרפסת בכניסה לביתנו,<br/>
+          ברחוב המורייה 21 (משפחת סידס, נכנסים ועולים במדרגות שבגינה).
+        </div>
+        <div style="margin-top:1.5rem"><button class="btn-hero" onclick="cancelBorrow()">חזרה לתפריט</button></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span class="footer-text"><strong>גמ"ח מתנות קטנות</strong> &middot; מצפה יריחו &middot; לזכר מתן מימוני ז"ל</span><button class="footer-admin-btn" onclick="showPage('admin')">&#128274; כניסת מנהל</button>
+  </footer>
+</div>
+
+<!-- ABOUT -->
+<div id="page-about" class="hidden">
+  <div class="about-page">
+    <p style="font-size:3rem;margin-bottom:1.5rem">&#9829;</p>
+    <h2 style="font-family:'SiteFont','Heebo',sans-serif;font-size:2.2rem;color:var(--teal-dark);margin-bottom:1rem">בקרוב כאן...</h2>
+    <p style="color:var(--text-mid);max-width:460px;margin:0 auto;line-height:1.8">עמוד אודות חדש ויפה על מתן יגיע בקרוב &#128149;</p>
+
+
+
+
+
+
+
+  </div>
+  <footer class="footer">
+    <span class="footer-text"><strong>גמ"ח מתנות קטנות</strong> &middot; מצפה יריחו &middot; לזכר מתן מימוני ז"ל</span><button class="footer-admin-btn" onclick="showPage('admin')">&#128274; כניסת מנהל</button>
+  </footer>
+</div>
+
+<!-- ADMIN -->
+<div id="page-admin" class="hidden">
+  <div class="admin-wrap">
+    <div id="admin-login" class="admin-login-box">
+      <h2>&#128274; כניסה לניהול</h2>
+      <p>אזור מנהלים בלבד</p>
+      <div class="fg"><label>סיסמה</label><input type="password" id="admin-pass-input" placeholder="הכנס סיסמה" onkeydown="if(event.key==='Enter')tryLogin()"/></div>
+      <p id="admin-err" style="color:#B05030;font-size:.83rem;margin-bottom:.7rem;display:none">סיסמה שגויה</p>
+      <button class="btn-hero" style="width:100%" onclick="tryLogin()">כניסה</button>
+    </div>
+    <div id="admin-panel" class="hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;flex-wrap:wrap;gap:1rem">
+        <h1 style="font-family:'SiteFont','Heebo',sans-serif;font-size:1.5rem;color:var(--teal-dark)">לוח ניהול</h1>
+        <button style="background:none;border:1px solid var(--border);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--text-mid);font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem" onclick="logout()">התנתקות</button>
+      </div>
+      <div class="atabs">
+        <button class="atab on" id="tab-loans" onclick="setAdminTab('loans')">&#128203; השאלות</button>
+        <button class="atab" id="tab-items" onclick="setAdminTab('items')">&#127922; פריטים</button>
+      </div>
+      <div id="admin-loans">
+        <div class="asec">
+          <h3 id="loans-title">ניהול השאלות (0)</h3>
+          <div id="loans-list"><div class="empty"><div class="ei">&#128237;</div>אין השאלות עדיין</div></div>
+        </div>
+      </div>
+      <div id="admin-items" class="hidden">
+        <div class="asec" style="display:flex;align-items:center;justify-content:space-between">
+          <h3 id="items-title">פריטים (0)</h3>
+          <button class="addbtn" id="btn-new-item">&#10133; פריט חדש</button>
+        </div>
+        <div class="asec" style="padding:.5rem 0 0;border:none;background:none;margin:0">
+          <div id="items-admin-list" class="iadmin"></div>
+
+
+
+
+
+
+
+
+
+
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM MODAL -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal modal-relative">
+    <button class="modal-close" onclick="closeModalDirect()">&#10005;</button>
+    <img id="modal-img" class="modal-img" src="" alt=""/>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem">
+        <span id="modal-badge" class="cbadge"></span>
+      </div>
+      <h2 id="modal-name"></h2>
+      <p id="modal-desc" class="mdesc"></p>
+      <div id="modal-kit-sections"></div>
+      <button id="modal-borrow-btn" class="modal-borrow-btn" onclick="borrowFromModal()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="edit-overlay" class="eoverlay hidden">
+  <div class="emodal">
+    <button class="eclose" onclick="window.closeEdit()">&#10005;</button>
+    <h3 id="edit-title">עריכת פריט</h3>
+    <div class="img-prev" id="edit-img-wrap">
+      <img id="edit-img-el" src="" style="display:none;width:100%;height:100%;object-fit:cover"/>
+      <span id="edit-no-img">אין תמונה</span>
+    </div>
+    <div class="img-btns">
+      <button class="img-btn" onclick="document.getElementById('edit-file-input').click()">&#128247; העלאת קובץ</button>
+      <button class="img-btn" onclick="window.promptImgUrl()">קישור URL</button>
+      <button class="img-btn del" onclick="window.clearEditImg()">מחיקת תמונה</button>
+    </div>
+    <input type="file" id="edit-file-input" accept="image/*" style="display:none" onchange="window.handleEditFile(event)"/>
+    <div class="fg"><label>שם הפריט</label><input id="edit-name" placeholder="שם..."/></div>
+    <div class="fg"><label>קטגוריה</label>
+      <select id="edit-cat" onchange="window.onEditCatChange()">
+        <option>פותחים קופסא</option>
+        <option>בין השורות</option>
+        <option>דייט על קלף</option>
+        <option>המיוחדים שלנו</option>
+      </select>
+    </div>
+    <div class="fg"><label>תיאור</label><textarea id="edit-desc" style="min-height:70px"></textarea></div>
+    <div id="edit-kit-fields" class="hidden">
+      <div class="fg"><label>&#9989; אנחנו כבר דאגנו ל...</label>
+        <textarea id="edit-kitwe" style="min-height:60px" placeholder="מה כלול בערכה"></textarea>
+      </div>
+      <div class="fg"><label>&#127968; עוד קצת השקעה מהבית</label>
+        <textarea id="edit-kityou" style="min-height:60px" placeholder="מה המשתמש צריך להביא"></textarea>
+      </div>
+    </div>
+    <button class="save-btn" id="edit-save-btn" onclick="window.saveEdit()">שמירה &#10003;</button>
+  </div>
+</div>
+
+<script type="module">
+
+// ── FIREBASE ──
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC0ErwzHBOVTsuKp-rdc15lKMoZ70T93Jw",
+  authDomain: "matanot-ktanot-e6d5f.firebaseapp.com",
+  projectId: "matanot-ktanot-e6d5f",
+  storageBucket: "matanot-ktanot-e6d5f.firebasestorage.app",
+  messagingSenderId: "1012453447392",
+  appId: "1:1012453447392:web:5d040bc205b1a0651e6285"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const ADMIN_PASS='3231';
+const CAT_ICONS={'\u05e4\u05d5\u05ea\u05d7\u05d9\u05dd \u05e7\u05d5\u05e4\u05e1\u05d0':'&#127183;','\u05d1\u05d9\u05df \u05d4\u05e9\u05d5\u05e8\u05d5\u05ea':'&#128214;','\u05d3\u05d9\u05d9\u05d8 \u05e2\u05dc \u05e7\u05dc\u05e3':'&#128149;','\u05d4\u05de\u05d9\u05d5\u05d7\u05d3\u05d9\u05dd \u05e9\u05dc\u05e0\u05d5':'&#127873;'};
+const PLACEHOLDERS={'\u05e4\u05d5\u05ea\u05d7\u05d9\u05dd \u05e7\u05d5\u05e4\u05e1\u05d0':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIiB2aWV3Qm94PSIwIDAgNDAwIDI2MCI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIyNjAiIGZpbGw9IiNFQUY1RjAiIHJ4PSIxMiIvPjx0ZXh0IHg9IjIwMCIgeT0iMTUwIiBmb250LXNpemU9IjcyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4mIzEyNzE4Mzs8L3RleHQ+PC9zdmc+','\u05d1\u05d9\u05df \u05d4\u05e9\u05d5\u05e8\u05d5\u05ea':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIiB2aWV3Qm94PSIwIDAgNDAwIDI2MCI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIyNjAiIGZpbGw9IiNFQUY1RjAiIHJ4PSIxMiIvPjx0ZXh0IHg9IjIwMCIgeT0iMTUwIiBmb250LXNpemU9IjcyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4mIzEyODIxNDs8L3RleHQ+PC9zdmc+','\u05d3\u05d9\u05d9\u05d8 \u05e2\u05dc \u05e7\u05dc\u05e3':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIiB2aWV3Qm94PSIwIDAgNDAwIDI2MCI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIyNjAiIGZpbGw9IiNFQUY1RjAiIHJ4PSIxMiIvPjx0ZXh0IHg9IjIwMCIgeT0iMTUwIiBmb250LXNpemU9IjcyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4mIzEyNzE4Mzs8L3RleHQ+PC9zdmc+','\u05d4\u05de\u05d9\u05d5\u05d7\u05d3\u05d9\u05dd \u05e9\u05dc\u05e0\u05d5':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIiB2aWV3Qm94PSIwIDAgNDAwIDI2MCI+PHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSIyNjAiIGZpbGw9IiNFQUY1RjAiIHJ4PSIxMiIvPjx0ZXh0IHg9IjIwMCIgeT0iMTUwIiBmb250LXNpemU9IjcyIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4mIzEyNzg3Mzs8L3RleHQ+PC9zdmc+'};
+
+let items=[];
+let loans=[];
+let selectedItem=null;
+let catFilter='\u05d4\u05db\u05dc';
+let modalItem=null;
+let editId=null;
+let editImgData='';
+
+// ── FIRESTORE SYNC ──
+async function loadItems(){
+  const snap = await getDocs(collection(db,'items'));
+  items = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderGrid();
+  renderAdminItems();
+}
+
+async function loadLoans(){
+  const snap = await getDocs(collection(db,'loans'));
+  loans = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderAdminLoans();
+}
+
+// ── PAGES ──
+function showPage(p){
+  ['home','about','admin'].forEach(x=>document.getElementById('page-'+x).classList.toggle('hidden',x!==p));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  const nb=document.getElementById('nav-'+p);if(nb)nb.classList.add('on');
+  if(p==='admin'){loadLoans();loadItems();}
+}
+
+// ── FILTERS ──
+function setFilter(val,btn){
+  catFilter=val;
+  document.querySelectorAll('#filters .fb-cat').forEach(b=>b.classList.toggle('on',b===btn));
+  renderGrid();
+}
+
+// ── AVAILABILITY ──
+function today(){return new Date().toISOString().split('T')[0];}
+function isAvailable(item){
+  const active=loans.filter(l=>l.itemId===item.id&&l.status==='\u05e4\u05e2\u05d9\u05dc');
+  if(!active.length)return 'av';
+  return 'tk';
+}
+function statusLabel(s){
+  if(s==='av')return '\u05e4\u05e0\u05d5\u05d9 \u05dc\u05d4\u05e9\u05d0\u05dc\u05d4';
+  if(s==='tk')return '\u05de\u05d5\u05e9\u05d0\u05dc \u05db\u05e2\u05ea';
+  return '\u05de\u05d7\u05db\u05d4 \u05dc\u05d4\u05d7\u05d6\u05e8\u05d4';
+}
+
+// ── GRID ──
+function renderGrid(){
+  const grid=document.getElementById('items-grid');
+  const shuffled=[...items].sort(()=>Math.random()-.5);
+  const filtered=shuffled.filter(i=>catFilter==='\u05d4\u05db\u05dc'||i.cat===catFilter);
+  if(!filtered.length){grid.innerHTML='<div class="empty"><div class="ei">&#128269;</div>\u05dc\u05d0 \u05e0\u05de\u05e6\u05d0\u05d5 \u05e4\u05e8\u05d9\u05d8\u05d9\u05dd</div>';return;}
+  grid.innerHTML=filtered.map(item=>{
+    const st=isAvailable(item);
+    const img=item.img||PLACEHOLDERS[item.cat]||PLACEHOLDERS['\u05e4\u05d5\u05ea\u05d7\u05d9\u05dd \u05e7\u05d5\u05e4\u05e1\u05d0'];
+    return `<div class="card${st!=='av'?' dim':''}" onclick="openModal('${item.id}')">
+      <img class="card-img" src="${img}" alt="${item.name}" onerror="this.src=PLACEHOLDERS['${item.cat}']||''"/>
+      <div class="card-body">
+        <div class="cbadge">${CAT_ICONS[item.cat]||''} ${item.cat}</div>
+        <div class="cname">${item.name}</div>
+        <div class="cdesc">${item.desc||''}</div>
+        <div class="sdot ${st}">${statusLabel(st)}</div>
+        <button class="bbtn"${st!=='av'?' disabled':''} onclick="event.stopPropagation();openBorrow('${item.id}')">${st==='av'?'\u05d4\u05e9\u05d0\u05dc\u05d4 \u2190':'\u05dc\u05d0 \u05d6\u05de\u05d9\u05df'}</button>
+      </div></div>`;
+  }).join('');
+}
+
+// ── MODAL ──
+function openModal(id){
+  const item=items.find(i=>i.id===id);if(!item)return;
+  modalItem=item;
+  const st=isAvailable(item);
+  const img=item.img||PLACEHOLDERS[item.cat]||'';
+  document.getElementById('modal-img').src=img;
+  document.getElementById('modal-badge').innerHTML=(CAT_ICONS[item.cat]||'')+' '+item.cat;
+  document.getElementById('modal-name').textContent=item.name;
+  document.getElementById('modal-desc').textContent=item.desc||'';
+  const ks=document.getElementById('modal-kit-sections');
+  if(item.cat==='\u05d4\u05de\u05d9\u05d5\u05d7\u05d3\u05d9\u05dd \u05e9\u05dc\u05e0\u05d5'&&(item.kitWe||item.kitYou)){
+    let h='';
+    if(item.kitWe)h+=`<div class="kit-section"><h4>&#9989; \u05d0\u05e0\u05d7\u05e0\u05d5 \u05db\u05d1\u05e8 \u05d3\u05d0\u05d2\u05e0\u05d5 \u05dc...</h4><p>${item.kitWe}</p></div>`;
+    if(item.kitYou)h+=`<div class="kit-section orange"><h4>&#127968; \u05e2\u05d5\u05d3 \u05e7\u05e6\u05ea \u05d4\u05e9\u05e7\u05e2\u05d4 \u05de\u05d4\u05d1\u05d9\u05ea</h4><p>${item.kitYou}</p></div>`;
+    ks.innerHTML=h;
+  }else ks.innerHTML='';
+  const btn=document.getElementById('modal-borrow-btn');
+  btn.disabled=st!=='av';
+  btn.textContent=st==='av'?'\u05d4\u05e9\u05d0\u05dc\u05d4 &#128154;':'\u05dc\u05d0 \u05d6\u05de\u05d9\u05df \u05db\u05e2\u05ea';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+function closeModal(e){if(e.target===document.getElementById('modal-overlay'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('modal-overlay').classList.add('hidden');document.body.style.overflow='';}
+function borrowFromModal(){if(!modalItem||isAvailable(modalItem)!=='av')return;closeModalDirect();openBorrow(modalItem.id);}
+
+// ── BORROW ──
+function openBorrow(id){
+  selectedItem=items.find(i=>i.id===id);if(!selectedItem)return;
+  document.getElementById('borrow-prompt').classList.add('hidden');
+  document.getElementById('borrow-success').classList.add('hidden');
+  document.getElementById('borrow-form-wrap').classList.remove('hidden');
+  document.getElementById('preview-icon').innerHTML=CAT_ICONS[selectedItem.cat]||'';
+  document.getElementById('preview-name').textContent=selectedItem.name;
+  document.getElementById('preview-desc').textContent=selectedItem.desc||'';
+  ['f-name','f-phone'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f-confirm').checked=false;
+  document.getElementById('borrow-sec').scrollIntoView({behavior:'smooth'});
+}
+function cancelBorrow(){
+  selectedItem=null;
+  document.getElementById('borrow-prompt').classList.remove('hidden');
+  document.getElementById('borrow-form-wrap').classList.add('hidden');
+  document.getElementById('borrow-success').classList.add('hidden');
+}
+async function submitBorrow(){
+  const name=document.getElementById('f-name').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
+  const confirm=document.getElementById('f-confirm').checked;
+  if(!name||!phone){alert('\u05d9\u05e9 \u05dc\u05de\u05dc\u05d0 \u05e9\u05dd \u05d5\u05d8\u05dc\u05e4\u05d5\u05df');return;}
+  if(!confirm){alert('\u05d9\u05e9 \u05dc\u05d0\u05e9\u05e8 \u05d0\u05ea \u05d4\u05ea\u05e0\u05d0\u05d9\u05dd');return;}
+  const loanData={
+    itemId:selectedItem.id,
+    item:selectedItem.name,
+    name,phone,
+    date:new Date().toLocaleDateString('he-IL'),
+    status:'\u05e4\u05e2\u05d9\u05dc'
+  };
+  const ref = await addDoc(collection(db,'loans'),loanData);
+  loans.push({id:ref.id,...loanData});
+  renderGrid();
+  document.getElementById('borrow-form-wrap').classList.add('hidden');
+  document.getElementById('borrow-success').classList.remove('hidden');
+  renderAdminLoans();
+}
+
+// ── ADMIN ──
+function tryLogin(){
+  if(document.getElementById('admin-pass-input').value===ADMIN_PASS){
+    document.getElementById('admin-login').classList.add('hidden');
+    document.getElementById('admin-panel').classList.remove('hidden');
+    document.getElementById('admin-err').style.display='none';
+    loadLoans();loadItems();
+  }else document.getElementById('admin-err').style.display='block';
+}
+function logout(){
+  document.getElementById('admin-login').classList.remove('hidden');
+  document.getElementById('admin-panel').classList.add('hidden');
+  document.getElementById('admin-pass-input').value='';
+  showPage('home');
+}
+function setAdminTab(tab){
+  document.getElementById('admin-loans').classList.toggle('hidden',tab!=='loans');
+  document.getElementById('admin-items').classList.toggle('hidden',tab!=='items');
+  document.getElementById('tab-loans').classList.toggle('on',tab==='loans');
+  document.getElementById('tab-items').classList.toggle('on',tab==='items');
+}
+function renderAdminLoans(){
+  const el=document.getElementById('loans-list');
+  document.getElementById('loans-title').textContent=`\u05e0\u05d9\u05d4\u05d5\u05dc \u05d4\u05e9\u05d0\u05dc\u05d5\u05ea (${loans.length})`;
+  if(!loans.length){el.innerHTML='<div class="empty"><div class="ei">&#128237;</div>\u05d0\u05d9\u05df \u05d4\u05e9\u05d0\u05dc\u05d5\u05ea \u05e2\u05d3\u05d9\u05d9\u05df</div>';return;}
+  el.innerHTML=loans.map(l=>`
+    <div class="lrow">
+      <span class="lid">${l.id.slice(-4)}</span>
+      <span class="lname">${l.item}</span>
+      <span class="linfo">${l.name} &middot; ${l.phone}</span>
+      <span class="linfo">${l.date||''}</span>
+      <span class="sbadge ${l.status==='\u05e4\u05e2\u05d9\u05dc'?'act':'ret'}">${l.status}</span>
+      ${l.status==='\u05e4\u05e2\u05d9\u05dc'?`<button class="retbtn" onclick="returnLoan('${l.id}')">\u05e1\u05de\u05df \u05db\u05d4\u05d5\u05d7\u05d6\u05e8</button>`:''}
+    </div>`).join('');
+}
+async function returnLoan(id){
+  await updateDoc(doc(db,'loans',id),{status:'\u05d4\u05d5\u05d7\u05d6\u05e8'});
+  loans=loans.map(l=>l.id===id?{...l,status:'\u05d4\u05d5\u05d7\u05d6\u05e8'}:l);
+  renderAdminLoans();renderGrid();
+}
+function renderAdminItems(){
+  document.getElementById('items-title').textContent=`\u05e4\u05e8\u05d9\u05d8\u05d9\u05dd (${items.length})`;
+  document.getElementById('items-admin-list').innerHTML=items.map(item=>{
+    const img=item.img||PLACEHOLDERS[item.cat]||'';
+    const st=isAvailable(item);
+    return `<div class="irow">
+      <img class="ithumb" src="${img}" alt="${item.name}" onerror="this.style.display='none'"/>
+      <span class="in">${item.name}</span>
+      <span class="ic">${item.cat}</span>
+      <span class="sbadge ${st==='av'?'act':'ret'}">${statusLabel(st)}</span>
+      <button class="editbtn" onclick="openEdit('${item.id}')">\u05e2\u05e8\u05d9\u05db\u05d4</button>
+      <button class="delbtn" onclick="removeItem('${item.id}')">\u05d4\u05e1\u05e8</button>
+    </div>`;
+  }).join('');
+}
+async function removeItem(id){
+  if(!confirm('\u05dc\u05d4\u05e1\u05d9\u05e8 \u05d0\u05ea \u05d4\u05e4\u05e8\u05d9\u05d8?'))return;
+  await deleteDoc(doc(db,'items',id));
+  items=items.filter(i=>i.id!==id);
+  renderAdminItems();renderGrid();
+}
+
+// ── EDIT MODAL ──
+function openEdit(id){
+  const isNew=id==='-1';
+  const item=isNew?{id:'-1',name:'',cat:'\u05e4\u05d5\u05ea\u05d7\u05d9\u05dd \u05e7\u05d5\u05e4\u05e1\u05d0',desc:'',img:'',kitWe:'',kitYou:''}:items.find(i=>i.id===id);
+  if(!item)return;
+  editId=id; editImgData=item.img||'';
+  document.getElementById('edit-title').textContent=isNew?'\u05d4\u05d5\u05e1\u05e4\u05ea \u05e4\u05e8\u05d9\u05d8 \u05d7\u05d3\u05e9':'\u05e2\u05e8\u05d9\u05db\u05ea \u05e4\u05e8\u05d9\u05d8';
+  document.getElementById('edit-save-btn').textContent=isNew?'\u05d4\u05d5\u05e1\u05e3 \u05dc\u05e7\u05d8\u05dc\u05d5\u05d2 +':'\u05e9\u05de\u05d9\u05e8\u05ea \u05e9\u05d9\u05e0\u05d5\u05d9\u05d9\u05dd';
+  document.getElementById('edit-name').value=item.name||'';
+  document.getElementById('edit-cat').value=item.cat||'\u05e4\u05d5\u05ea\u05d7\u05d9\u05dd \u05e7\u05d5\u05e4\u05e1\u05d0';
+  document.getElementById('edit-desc').value=item.desc||'';
+  document.getElementById('edit-kitwe').value=item.kitWe||'';
+  document.getElementById('edit-kityou').value=item.kitYou||'';
+  document.getElementById('edit-kit-fields').classList.toggle('hidden',item.cat!=='\u05d4\u05de\u05d9\u05d5\u05d7\u05d3\u05d9\u05dd \u05e9\u05dc\u05e0\u05d5');
+  refreshEditImgPreview();
+  document.getElementById('edit-overlay').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+function refreshEditImgPreview(){
+  const img=document.getElementById('edit-img-el');
+  const noimg=document.getElementById('edit-no-img');
+  if(editImgData){img.src=editImgData;img.style.display='block';noimg.style.display='none';}
+  else{img.style.display='none';noimg.style.display='flex';}
+}
+function closeEdit(){document.getElementById('edit-overlay').classList.add('hidden');document.body.style.overflow='';}
+function confirmCloseEdit(){
+  const name=document.getElementById('edit-name').value.trim();
+  if(!name){closeEdit();return;}
+  const d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;background:rgba(42,38,32,.7);z-index:700;display:flex;align-items:center;justify-content:center;padding:1rem';
+  d.innerHTML=`<div style="background:var(--white);border-radius:1rem;padding:2rem;max-width:320px;width:100%;text-align:center;font-family:'SiteFont','Heebo',sans-serif">
+    <div style="font-size:2rem;margin-bottom:.75rem">&#128337;</div>
+    <p style="font-size:1rem;color:var(--text);margin-bottom:1.5rem;line-height:1.6">שינויים לא נשמרו.<br/>מה לעשות?</p>
+    <div style="display:flex;gap:.75rem;justify-content:center">
+      <button onclick="saveEdit();this.closest('div[style]').remove()" style="padding:.7rem 1.4rem;background:var(--teal);color:#fff;border:none;border-radius:.5rem;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.95rem;font-weight:600">שמור</button>
+      <button onclick="closeEdit();this.closest('div[style]').remove()" style="padding:.7rem 1.4rem;background:none;border:1.5px solid var(--border);border-radius:.5rem;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.95rem">סגור בלי שמירה</button>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+}
+function handleEditFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{editImgData=ev.target.result;refreshEditImgPreview();};
+  reader.readAsDataURL(file);
+}
+function promptImgUrl(){
+  const url=prompt('\u05d4\u05d3\u05d1\u05e7 \u05e7\u05d9\u05e9\u05d5\u05e8 URL:');
+  if(url){editImgData=url;refreshEditImgPreview();}
+}
+function clearEditImg(){editImgData='';refreshEditImgPreview();}
+function onEditCatChange(){
+  const cat=document.getElementById('edit-cat').value;
+  document.getElementById('edit-kit-fields').classList.toggle('hidden',cat!=='\u05d4\u05de\u05d9\u05d5\u05d7\u05d3\u05d9\u05dd \u05e9\u05dc\u05e0\u05d5');
+}
+async function saveEdit(){
+  const name=document.getElementById('edit-name').value.trim();
+  if(!name){alert('\u05d9\u05e9 \u05dc\u05d4\u05d6\u05d9\u05df \u05e9\u05dd \u05e4\u05e8\u05d9\u05d8');return;}
+  const data={
+    name,
+    cat:document.getElementById('edit-cat').value,
+    desc:document.getElementById('edit-desc').value,
+    img:editImgData,
+    kitWe:document.getElementById('edit-kitwe').value,
+    kitYou:document.getElementById('edit-kityou').value,
+  };
+  if(editId==='-1'){
+    const ref=await addDoc(collection(db,'items'),data);
+    items.push({id:ref.id,...data});
+  }else{
+    await updateDoc(doc(db,'items',editId),data);
+    items=items.map(i=>i.id===editId?{id:editId,...data}:i);
+  }
+  closeEdit();
+  renderAdminItems();renderGrid();
+}
+
+// ── INIT ──
+loadItems();
+loadLoans();
+
+// Expose functions globally for onclick handlers
+window.showPage=showPage;
+window.setFilter=setFilter;
+window.openModal=openModal;
+window.openBorrow=openBorrow;
+window.cancelBorrow=cancelBorrow;
+window.submitBorrow=submitBorrow;
+window.borrowFromModal=borrowFromModal;
+window.closeModal=closeModal;
+window.closeModalDirect=closeModalDirect;
+window.tryLogin=tryLogin;
+window.logout=logout;
+window.setAdminTab=setAdminTab;
+window.returnLoan=returnLoan;
+window.removeItem=removeItem;
+window.openEdit=openEdit;
+window.closeEdit=closeEdit;
+window.confirmCloseEdit=confirmCloseEdit;
+window.saveEdit=saveEdit;
+window.handleEditFile=handleEditFile;
+window.promptImgUrl=promptImgUrl;
+window.clearEditImg=clearEditImg;
+window.onEditCatChange=onEditCatChange;
+
+// New item button
+const btnNew = document.getElementById('btn-new-item');
+if(btnNew) btnNew.addEventListener('click', function(){ openEdit('-1'); });
+
+// Click outside edit modal
+document.getElementById('edit-overlay').addEventListener('click',function(e){
+  if(e.target===this) window.confirmCloseEdit();
+});
+
+</script>
+</body>
+</html>
