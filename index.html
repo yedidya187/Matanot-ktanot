@@ -20,19 +20,19 @@
   --border:#D8CEBA;--white:#FEFAF3;
 }
 html{direction:rtl;scroll-behavior:smooth}
-body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var(--text);min-height:100vh;font-size:17px}
+body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var(--text);min-height:100vh;font-size:19px}
 
 /* NAV */
 .nav{background:var(--paper);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 .75rem;height:56px;position:sticky;top:0;z-index:300;box-shadow:0 2px 14px rgba(58,120,96,.07);overflow:hidden}
-.nav-brand{font-size:1rem;color:var(--teal-dark);font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.3rem;text-decoration:none;white-space:nowrap}
+.nav-brand{font-size:1.15rem;color:var(--teal-dark);font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.3rem;text-decoration:none;white-space:nowrap}
 .nav-brand span{color:var(--lav)}
 .nav-links{display:flex;gap:.2rem;list-style:none;flex-wrap:nowrap}
-.nav-btn{background:none;border:none;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.78rem;color:var(--text-mid);padding:.3rem .45rem;border-radius:.4rem;transition:all .2s;white-space:nowrap}
+.nav-btn{background:none;border:none;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.92rem;color:var(--text-mid);padding:.3rem .5rem;border-radius:.4rem;transition:all .2s;white-space:nowrap}
 .nav-btn:hover,.nav-btn.on{color:var(--teal-dark);background:var(--teal-light);font-weight:600}
 
 /* HERO */
 .hero{background:linear-gradient(155deg,var(--paper) 0%,var(--cream) 55%,var(--cream-warm) 100%);padding:3rem 1.5rem 2.5rem;text-align:center;position:relative;overflow:hidden}
-.logo-img{width:220px;height:220px;object-fit:contain;display:block;margin:0 auto 1.2rem}
+.logo-img{width:280px;height:280px;object-fit:contain;display:block;margin:0 auto 1.2rem}
 .hero h1{font-size:clamp(1.7rem,3.5vw,2.4rem);color:var(--teal-dark);margin-bottom:.9rem}
 .hero p{color:var(--text-mid);font-size:1rem;max-width:520px;margin:0 auto 1.8rem;line-height:1.85;font-weight:300}
 .hero p strong{color:var(--teal-dark);font-weight:700}
@@ -532,7 +532,7 @@ function openModal(id){
   }
   const btn=document.getElementById('modal-borrow-btn');
   btn.disabled=st!=='av';
-  btn.textContent=st==='av'?'השאלה &#128154;':'לא זמין כעת';
+  btn.innerHTML=st==='av'?'השאלה &#128154;':'לא זמין כעת';
   document.getElementById('modal-overlay').classList.remove('hidden');
   document.body.style.overflow='hidden';
 }
@@ -595,13 +595,26 @@ async function submitBorrow(){
   const confirm=document.getElementById('f-confirm').checked;
   if(!name||!phone){alert('יש למלא שם וטלפון');return;}
   if(!confirm){alert('יש לאשר את התנאים');return;}
-  const loanData={itemId:selectedItem.id,item:selectedItem.name,name,phone,date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:false};
-  const ref=await addDoc(collection(db,'loans'),loanData);
-  loans.push({id:ref.id,...loanData});
-  renderGrid();
-  document.getElementById('borrow-form-wrap').classList.add('hidden');
-  document.getElementById('borrow-success').classList.remove('hidden');
-  renderAdminLoans();renderNotifications();
+  // Prevent duplicate - check if already borrowed this item
+  const alreadyBorrowed=loans.some(l=>l.itemId===selectedItem.id&&l.status==='פעיל');
+  if(alreadyBorrowed){alert('הפריט כבר מושאל!');return;}
+  // Disable button while submitting
+  const btn=document.getElementById('btn-submit-borrow');
+  btn.disabled=true;
+  btn.textContent='שולח...';
+  try{
+    const loanData={itemId:selectedItem.id,item:selectedItem.name,name,phone,date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:false};
+    const ref=await addDoc(collection(db,'loans'),loanData);
+    loans.push({id:ref.id,...loanData});
+    renderGrid();
+    document.getElementById('borrow-form-wrap').classList.add('hidden');
+    document.getElementById('borrow-success').classList.remove('hidden');
+    renderAdminLoans();renderNotifications();
+  }catch(e){
+    alert('שגיאה בשמירה, נסה שוב');
+    btn.disabled=false;
+    btn.textContent='סימון לקיחה &#128149;';
+  }
 }
 
 // ── RETURN ──
@@ -660,11 +673,18 @@ function renderAdminLoans(){
       <span class="sbadge ${l.status==='פעיל'?'act':'ret'}">${l.status}</span>
       <span style="color:var(--text-mid);font-size:.78rem;grid-column:2">${l.name} &middot; ${l.phone} &middot; ${l.date||''}</span>
       ${l.status==='פעיל'?`<button class="retbtn" data-lid="${l.id}">החזיר</button>`:''}
+      <button class="delbtn" data-del="${l.id}" style="font-size:.72rem;padding:.22rem .55rem">מחק</button>
     </div>`).join('');
   el.querySelectorAll('[data-lid]').forEach(btn=>btn.addEventListener('click',async()=>{
     await updateDoc(doc(db,'loans',btn.dataset.lid),{status:'הוחזר'});
     loans=loans.map(l=>l.id===btn.dataset.lid?{...l,status:'הוחזר'}:l);
     renderAdminLoans();renderGrid();
+  }));
+  el.querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click',async()=>{
+    if(!confirm('למחוק השאלה זו מההיסטוריה?'))return;
+    await deleteDoc(doc(db,'loans',btn.dataset.del));
+    loans=loans.filter(l=>l.id!==btn.dataset.del);
+    renderAdminLoans();renderNotifications();
   }));
 }
 
