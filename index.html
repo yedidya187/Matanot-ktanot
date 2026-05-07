@@ -64,11 +64,11 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .fb-cat{background:none;border:1.5px solid var(--teal-mid);padding:.35rem .95rem;border-radius:2rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.85rem;color:var(--teal-dark);cursor:pointer;transition:all .2s;font-weight:500;white-space:nowrap;min-width:fit-content}
 .fb-cat:hover,.fb-cat.on{border-color:var(--teal);background:var(--teal);color:#fff;font-weight:700}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.25rem}
-.card{background:var(--white);border:1px solid var(--border);border-radius:1rem;overflow:hidden;transition:all .25s;cursor:pointer;opacity:0;animation:fadeUp .5s ease forwards}
+.card{background:var(--white);border:1px solid var(--border);border-radius:1rem;overflow:hidden;transition:all .25s;cursor:pointer;opacity:0;animation:fadeUp .5s ease forwards;display:flex;flex-direction:column}
 @keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 .card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(58,120,96,.12);border-color:var(--teal-mid)}
 .card.dim{opacity:.55}
-.card-img{width:100%;height:160px;object-fit:cover;background:var(--teal-light)}
+.card-img{width:100%;height:160px;max-height:160px;object-fit:contain;background:#fff;padding:.75rem;flex-shrink:0}
 .card-body{padding:1.1rem 1.2rem 1.3rem}
 .cbadge{display:inline-block;font-size:.72rem;font-weight:700;padding:.17rem .6rem;border-radius:2rem;background:var(--teal-light);color:var(--teal-dark);margin-bottom:.6rem}
 .cname{font-size:1.08rem;color:var(--text);margin-bottom:.3rem;font-weight:700}
@@ -83,7 +83,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 /* ITEM MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(42,38,32,.55);backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem}
 .modal{background:var(--white);border-radius:1.25rem;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(42,38,32,.22);position:relative}
-.modal-img{width:100%;height:220px;object-fit:cover;border-radius:1.25rem 1.25rem 0 0;background:var(--teal-light)}
+.modal-img{width:100%;height:220px;object-fit:contain;background:#fff;border-radius:1.25rem 1.25rem 0 0;padding:.5rem}
 .modal-body{padding:1.75rem}
 .modal-body h2{font-size:1.5rem;color:var(--teal-dark);margin-bottom:.35rem}
 .mdesc{color:var(--text-mid);font-size:.95rem;line-height:1.75;margin-bottom:1.25rem;font-weight:300}
@@ -123,7 +123,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .borrow-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.85rem;margin-bottom:1.5rem}
 .borrow-card{background:var(--white);border:1.5px solid var(--border);border-radius:.85rem;padding:.85rem;cursor:pointer;transition:all .2s;text-align:center}
 .borrow-card:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 6px 20px rgba(74,158,126,.15)}
-.borrow-card .bc-img{width:100%;height:90px;object-fit:cover;border-radius:.5rem;margin-bottom:.5rem;background:var(--teal-light)}
+.borrow-card .bc-img{width:100%;height:90px;object-fit:contain;background:#fff;border-radius:.5rem;margin-bottom:.5rem;padding:.25rem}
 .borrow-card .bc-name{font-weight:700;font-size:.88rem;color:var(--text);margin-bottom:.2rem}
 .borrow-card .bc-cat{font-size:.72rem;color:var(--teal-dark);background:var(--teal-light);padding:.12rem .5rem;border-radius:2rem;display:inline-block}
 .r-loan-item{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;background:var(--white);border:1px solid var(--border);border-radius:.75rem;margin-bottom:.6rem;gap:.75rem;flex-wrap:wrap}
@@ -233,13 +233,14 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
       <h2>הדייטים שלנו <span class="heart-anim">&#9829;</span></h2>
       <div class="filters" id="filters">
         <button class="fb-cat on" id="filter-all">הכל</button>
-        <button class="fb-cat" id="filter-cat1">פותחים קופסא</button>
-        <button class="fb-cat" id="filter-cat2">בין השורות</button>
-        <button class="fb-cat" id="filter-cat3">דייט על קלף</button>
-        <button class="fb-cat" id="filter-cat4">המיוחדים שלנו</button>
+        <button class="fb-cat" id="filter-cat1">🎲 פותחים קופסא</button>
+        <button class="fb-cat" id="filter-cat2">📖 בין השורות</button>
+        <button class="fb-cat" id="filter-cat3">🃏 דייט על קלף</button>
+        <button class="fb-cat" id="filter-cat4">✨ המיוחדים שלנו</button>
       </div>
     </div>
     <div class="grid" id="items-grid"></div>
+  <div id="load-more-wrap" style="text-align:center;margin-top:1.5rem;display:none"><button id="btn-load-more" class="btn-hero" style="background:none;color:var(--teal-dark);border:2px solid var(--teal);padding:.65rem 2rem;font-size:.95rem">טען עוד ↓</button></div>
   </section>
 
   <!-- HOW IT WORKS -->
@@ -427,10 +428,10 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
     <div class="fg"><label>שם הפריט</label><input id="edit-name" placeholder="שם..."/></div>
     <div class="fg"><label>קטגוריה</label>
       <select id="edit-cat" style="width:100%;padding:.68rem .95rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.93rem;color:var(--text);background:var(--white);direction:rtl">
-        <option>פותחים קופסא</option>
-        <option>בין השורות</option>
-        <option>דייט על קלף</option>
-        <option>המיוחדים שלנו</option>
+        <option>🎲 פותחים קופסא</option>
+        <option>📖 בין השורות</option>
+        <option>🃏 דייט על קלף</option>
+        <option>✨ המיוחדים שלנו</option>
       </select>
     </div>
     <div class="fg"><label>תיאור</label><textarea id="edit-desc" style="min-height:70px"></textarea></div>
@@ -489,18 +490,42 @@ function showPage(p){
 // ── FILTERS ──
 function setFilter(val){
   catFilter=val;
+  shownCount=8;
   document.querySelectorAll('.fb-cat').forEach(b=>b.classList.remove('on'));
   document.getElementById('filter-'+(val==='הכל'?'all':val==='פותחים קופסא'?'cat1':val==='בין השורות'?'cat2':val==='דייט על קלף'?'cat3':'cat4')).classList.add('on');
   renderGrid();
 }
 
 // ── GRID ──
+function getSmartSample(items){
+  const cats=['פותחים קופסא','בין השורות','דייט על קלף','המיוחדים שלנו'];
+  const result=[];
+  cats.forEach(cat=>{
+    const catItems=[...items.filter(i=>i.cat===cat)].sort(()=>Math.random()-.5);
+    result.push(...catItems.slice(0,2));
+  });
+  return result.sort(()=>Math.random()-.5);
+}
+
+let shownCount=8;
+
 function renderGrid(){
   const grid=document.getElementById('items-grid');
   const shuffled=[...items].sort(()=>Math.random()-.5);
   const filtered=shuffled.filter(i=>catFilter==='הכל'||i.cat===catFilter);
-  if(!filtered.length){grid.innerHTML='<div class="empty"><div class="ei">&#128269;</div>לא נמצאו פריטים</div>';return;}
-  grid.innerHTML=filtered.map((item,idx)=>{
+  if(!filtered.length){grid.innerHTML='<div class="empty"><div class="ei">&#128269;</div>לא נמצאו פריטים</div>';document.getElementById('load-more-wrap').style.display='none';return;}
+  
+  let toShow;
+  if(catFilter==='הכל'){
+    toShow=getSmartSample(filtered).slice(0,shownCount);
+    const wrap=document.getElementById('load-more-wrap');
+    wrap.style.display=filtered.length>shownCount?'block':'none';
+  }else{
+    toShow=filtered;
+    document.getElementById('load-more-wrap').style.display='none';
+  }
+  
+  grid.innerHTML=toShow.map((item,idx)=>{
     const st=isAvailable(item);
     const img=item.img||PLACEHOLDERS[item.cat]||'';
     return `<div class="card ${st!=='av'?'dim':''}" style="animation-delay:${idx*0.05}s" data-id="${item.id}">
@@ -795,20 +820,35 @@ function closeEdit(){document.getElementById('edit-overlay').classList.add('hidd
 async function saveEdit(){
   const name=document.getElementById('edit-name').value.trim();
   if(!name){alert('יש להזין שם פריט');return;}
-  const cat=document.getElementById('edit-cat').value;
-  const data={name,cat,desc:document.getElementById('edit-desc').value,img:editImgData,kitWe:document.getElementById('edit-kitwe').value,kitYou:document.getElementById('edit-kityou').value};
-  if(editId==='-1'){
-    const ref=await addDoc(collection(db,'items'),data);
-    items.push({id:ref.id,...data});
-  }else{
-    await updateDoc(doc(db,'items',editId),data);
-    items=items.map(i=>i.id===editId?{id:editId,...data}:i);
+  const btn=document.getElementById('edit-save-btn');
+  if(btn.disabled)return;
+  btn.disabled=true;
+  btn.textContent='שומר...';
+  try{
+    const cat=document.getElementById('edit-cat').value;
+    const data={name,cat,desc:document.getElementById('edit-desc').value,img:editImgData,kitWe:document.getElementById('edit-kitwe').value,kitYou:document.getElementById('edit-kityou').value};
+    if(editId==='-1'){
+      const ref=await addDoc(collection(db,'items'),data);
+      items.push({id:ref.id,...data});
+    }else{
+      await updateDoc(doc(db,'items',editId),data);
+      items=items.map(i=>i.id===editId?{id:editId,...data}:i);
+    }
+    closeEdit();renderAdminItems();renderGrid();
+  }catch(e){
+    alert('שגיאה בשמירה, נסה שוב');
+    btn.disabled=false;
+    btn.textContent=editId==='-1'?'הוסף לקטלוג +':'שמירה ✓';
   }
-  closeEdit();renderAdminItems();renderGrid();
 }
 
 // ── EVENT LISTENERS ──
 document.getElementById('nav-home-brand')?.addEventListener('click',e=>{e.preventDefault();showPage('home');window.scrollTo({top:0,behavior:'smooth'});});
+document.getElementById('btn-load-more')?.addEventListener('click',()=>{
+  shownCount+=8;
+  renderGrid();
+  document.getElementById('load-more-wrap').scrollIntoView({behavior:'smooth'});
+});
 document.getElementById('nav-catalog-btn')?.addEventListener('click',()=>{showPage('home');setTimeout(()=>document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'}),100);});
 document.getElementById('nav-about')?.addEventListener('click',()=>showPage('about'));
 document.getElementById('nav-borrow-btn')?.addEventListener('click',()=>{showPage('home');showSection('borrow');});
