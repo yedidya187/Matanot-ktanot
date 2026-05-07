@@ -434,10 +434,10 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
     <div class="fg"><label>שם הפריט</label><input id="edit-name" placeholder="שם..."/></div>
     <div class="fg"><label>קטגוריה</label>
       <select id="edit-cat" style="width:100%;padding:.68rem .95rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.93rem;color:var(--text);background:var(--white);direction:rtl">
-        <option>🎲 פותחים קופסא</option>
-        <option>📖 בין השורות</option>
-        <option>🃏 דייט על קלף</option>
-        <option>✨ המיוחדים שלנו</option>
+        <option>פותחים קופסא</option>
+        <option>בין השורות</option>
+        <option>דייט על קלף</option>
+        <option>המיוחדים שלנו</option>
       </select>
     </div>
     <div class="fg"><label>תיאור</label><textarea id="edit-desc" style="min-height:70px"></textarea></div>
@@ -496,8 +496,8 @@ function showPage(p){
 
 // ── FILTERS ──
 function setFilter(val){
-  catFilter=val;
-  shownCount=8;
+  // Strip emoji if present
+  catFilter=val.replace(/[^\u0000-\u05FF\s]/g,'').trim();
   document.querySelectorAll('.fb-cat').forEach(b=>b.classList.remove('on'));
   document.getElementById('filter-'+(val==='הכל'?'all':val==='פותחים קופסא'?'cat1':val==='בין השורות'?'cat2':val==='דייט על קלף'?'cat3':'cat4')).classList.add('on');
   renderGrid();
@@ -517,24 +517,25 @@ function getSmartSample(items){
   return [...first.sort(()=>Math.random()-.5), ...rest.sort(()=>Math.random()-.5)];
 }
 
-let shownCount=8;
 let cachedSample=[];
 
-function renderGrid(append=false){
+function renderGrid(){
   const grid=document.getElementById('items-grid');
-  const shuffled=[...items].sort(()=>Math.random()-.5);
-  const filtered=shuffled.filter(i=>catFilter==='הכל'||i.cat===catFilter);
-  if(!filtered.length){grid.innerHTML='<div class="empty"><div class="ei">&#128269;</div>לא נמצאו פריטים</div>';document.getElementById('load-more-wrap').style.display='none';return;}
+  const wrap=document.getElementById('load-more-wrap');
   
   let toShow;
   if(catFilter==='הכל'){
-    if(!append||cachedSample.length===0) cachedSample=getSmartSample(filtered);
-    toShow=cachedSample.slice(0,shownCount);
-    const wrap=document.getElementById('load-more-wrap');
-    wrap.style.display=cachedSample.length>shownCount?'block':'none';
+    toShow=cachedSample;
+    wrap.style.display=allItemsLoaded?'none':'block';
   }else{
-    toShow=filtered;
-    document.getElementById('load-more-wrap').style.display='none';
+    toShow=items.filter(i=>i.cat===catFilter);
+    wrap.style.display='none';
+  }
+  
+  if(!toShow.length){
+    grid.innerHTML='<div class="empty"><div class="ei">&#128269;</div>לא נמצאו פריטים</div>';
+    wrap.style.display='none';
+    return;
   }
   
   grid.innerHTML=toShow.map((item,idx)=>{
@@ -550,7 +551,6 @@ function renderGrid(append=false){
         <button class="bbtn" ${st!=='av'?'disabled':''} data-borrow="${item.id}">${st==='av'?'השאלה ←':'כרגע אצל זוג מאושר אחר ♥'}</button>
       </div></div>`;
   }).join('');
-  // event delegation
   grid.querySelectorAll('[data-borrow]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openBorrowFromCard(btn.dataset.borrow);}));
   grid.querySelectorAll('[data-id]').forEach(card=>card.addEventListener('click',()=>openModal(card.dataset.id)));
 }
@@ -858,9 +858,9 @@ async function saveEdit(){
 
 // ── EVENT LISTENERS ──
 document.getElementById('nav-home-brand')?.addEventListener('click',e=>{e.preventDefault();showPage('home');window.scrollTo({top:0,behavior:'smooth'});});
-document.getElementById('btn-load-more')?.addEventListener('click',()=>{
-  shownCount+=8;
-  renderGrid(true);
+document.getElementById('btn-load-more')?.addEventListener('click',async()=>{
+  await loadItemsPage();
+  renderGrid();
   document.getElementById('load-more-wrap').scrollIntoView({behavior:'smooth'});
 });
 document.getElementById('nav-catalog-btn')?.addEventListener('click',()=>{showPage('home');setTimeout(()=>document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'}),100);});
@@ -940,6 +940,7 @@ document.querySelectorAll('#filters .fb-cat').forEach(btn=>{
 async function init(){
   document.getElementById('items-grid').innerHTML='<div class="empty"><div class="ei">&#8987;</div>טוען...</div>';
   await Promise.all([loadItems(), loadLoans()]);
+  await loadItemsPage(true);
   renderGrid();
 }
 init();
