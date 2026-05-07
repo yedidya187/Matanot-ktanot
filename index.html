@@ -525,7 +525,7 @@ function renderGrid(append=false){
   
   let toShow;
   if(catFilter==='הכל'){
-    if(!append) cachedSample=getSmartSample(filtered);
+    if(!append||cachedSample.length===0) cachedSample=getSmartSample(filtered);
     toShow=cachedSample.slice(0,shownCount);
     const wrap=document.getElementById('load-more-wrap');
     wrap.style.display=cachedSample.length>shownCount?'block':'none';
