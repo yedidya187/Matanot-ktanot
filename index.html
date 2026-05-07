@@ -468,7 +468,6 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-enableIndexedDbPersistence(db).catch(()=>{});
 
 const ADMIN_PASS = '3231';
 const CAT_ICONS = {'פותחים קופסא':'&#127183;','בין השורות':'&#128214;','דייט על קלף':'&#128149;','המיוחדים שלנו':'&#127873;'};
@@ -1019,10 +1018,20 @@ document.querySelectorAll('#filters .fb-cat').forEach(btn=>{
 // ── INIT ──
 async function init(){
   document.getElementById('items-grid').innerHTML='<div class="empty"><div class="ei">&#8987;</div>טוען...</div>';
-  await Promise.all([loadItems(), loadLoans()]);
-  renderGrid();
+  try{
+    await Promise.all([loadItems(), loadLoans()]);
+    renderGrid();
+  }catch(e){
+    document.getElementById('items-grid').innerHTML='<div class="empty"><div class="ei">&#9888;</div>שגיאה בטעינה. רענן את הדף.</div>';
+    console.error(e);
+  }
 }
 init();
 </script>
 </body>
-</html>
+</htm
+function cleanCat(cat){
+  if(!cat)return '';
+  return cat.replace(/[^\u0000-\u05FF\s\-]/gu,'').trim();
+}
+>
