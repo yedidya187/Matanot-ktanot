@@ -370,7 +370,10 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
     <div id="admin-panel" class="hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
         <h1 style="font-size:1.5rem;color:var(--teal-dark);font-weight:700">לוח ניהול</h1>
-        <button style="background:none;border:1px solid var(--border);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--text-mid);font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem" id="btn-logout">התנתקות</button>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button style="background:none;border:1px solid var(--teal-mid);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--teal-dark);font-family:'SiteFont','Heebo',sans-serif;font-size:.78rem" id="btn-fix-cats">תקן קטגוריות</button>
+          <button style="background:none;border:1px solid var(--border);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--text-mid);font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem" id="btn-logout">התנתקות</button>
+        </div>
       </div>
       <div class="atabs">
         <button class="atab on" id="tab-notif">&#128149; התראות <span class="notif-badge hidden" id="notif-badge"></span></button>
@@ -475,6 +478,28 @@ let items=[], loans=[], selectedItem=null, catFilter='הכל', editId=null, edit
 async function loadItems(){
   const snap = await getDocs(collection(db,'items'));
   items = snap.docs.map(d=>{const data=d.data();return {id:d.id,...data};});
+}
+
+let allItemsLoaded=false;
+
+async function loadItemsPage(reset=false){
+  if(reset){allItemsLoaded=false;cachedSample=[];}
+  if(allItemsLoaded)return;
+  const cats=['פותחים קופסא','בין השורות','דייט על קלף','המיוחדים שלנו'];
+  const shownIds=new Set(cachedSample.map(i=>i.id));
+  const newItems=[];
+  for(const cat of cats){
+    const unshown=items.filter(i=>i.cat===cat&&!shownIds.has(i.id));
+    const shuffled=[...unshown].sort(()=>Math.random()-.5);
+    newItems.push(...shuffled.slice(0,2));
+  }
+  if(newItems.length<8){
+    const used=new Set([...shownIds,...newItems.map(i=>i.id)]);
+    const rest=items.filter(i=>!used.has(i.id)).sort(()=>Math.random()-.5);
+    newItems.push(...rest.slice(0,8-newItems.length));
+  }
+  cachedSample=[...cachedSample,...newItems.sort(()=>Math.random()-.5)];
+  if(cachedSample.length>=items.length)allItemsLoaded=true;
 }
 async function loadLoans(){
   const snap = await getDocs(collection(db,'loans'));
@@ -856,6 +881,31 @@ async function saveEdit(){
   }
 }
 
+
+async function fixCategories(){
+  const catMap={
+    '?? פותחים קופסא':'פותחים קופסא',
+    '?? בין השורות':'בין השורות',
+    '?? דייט על קלף':'דייט על קלף',
+    '✨ המיוחדים שלנו':'המיוחדים שלנו'
+  };
+  let fixed=0;
+  for(const item of items){
+    const clean=catMap[item.cat];
+    if(clean){
+      await updateDoc(doc(db,'items',item.id),{cat:clean});
+      fixed++;
+    }
+  }
+  if(fixed>0){
+    alert('תוקן! '+fixed+' פריטים עודכנו');
+    await loadItems();
+    renderGrid();
+    renderAdminItems();
+  } else {
+    alert('אין פריטים לתיקון');
+  }
+}
 // ── EVENT LISTENERS ──
 document.getElementById('nav-home-brand')?.addEventListener('click',e=>{e.preventDefault();showPage('home');window.scrollTo({top:0,behavior:'smooth'});});
 document.getElementById('btn-load-more')?.addEventListener('click',async()=>{
@@ -876,6 +926,7 @@ document.getElementById('btn-admin')?.addEventListener('click',()=>showPage('adm
 document.getElementById('btn-admin-about')?.addEventListener('click',()=>showPage('admin'));
 document.getElementById('btn-login')?.addEventListener('click',tryLogin);
 document.getElementById('admin-pass-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
+document.getElementById('btn-fix-cats')?.addEventListener('click',fixCategories);
 document.getElementById('btn-logout')?.addEventListener('click',()=>{stopPolling();document.getElementById('admin-login').classList.remove('hidden');document.getElementById('admin-panel').classList.add('hidden');document.getElementById('admin-pass-input').value='';showPage('home');});
 document.getElementById('tab-notif')?.addEventListener('click',()=>setAdminTab('notif'));
 document.getElementById('btn-clear-all-notif')?.addEventListener('click',clearAllNotifications);
