@@ -192,6 +192,8 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .empty{text-align:center;padding:2.5rem;color:var(--text-light)}
 .empty .ei{font-size:2.2rem;margin-bottom:.75rem}
 .addflash{color:#2A7A50;font-weight:700;font-size:.88rem;padding:.4rem 0}
+.page-btn{background:none;border:1.5px solid var(--teal-mid);color:var(--teal-dark);width:36px;height:36px;border-radius:50%;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.9rem;font-weight:600;transition:all .2s}
+.page-btn:hover,.page-btn.on{background:var(--teal);color:#fff;border-color:var(--teal)}
 .hidden{display:none!important}
 @media(max-width:600px){
   .frow,.addrow{grid-template-columns:1fr}
@@ -246,7 +248,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
       </div>
     </div>
     <div class="grid" id="items-grid"></div>
-  <div id="load-more-wrap" style="text-align:center;margin-top:1.5rem;display:none"><button id="btn-load-more" class="btn-hero" style="background:none;color:var(--teal-dark);border:2px solid var(--teal);padding:.65rem 2rem;font-size:.95rem">טען עוד ↓</button></div>
+  <div id="pagination" style="display:none;text-align:center;margin-top:1.5rem;display:flex;justify-content:center;align-items:center;gap:.5rem;flex-wrap:wrap"></div>
   </section>
 
   <!-- HOW IT WORKS -->
@@ -489,7 +491,7 @@ async function loadItemsPage(reset=false){
   const shownIds=new Set(cachedSample.map(i=>i.id));
   const newItems=[];
   for(const cat of cats){
-    const unshown=items.filter(i=>i.cat===cat&&!shownIds.has(i.id));
+    const unshown=items.filter(i=>cleanCat(i.cat)===cat&&!shownIds.has(i.id));
     const shuffled=[...unshown].sort(()=>Math.random()-.5);
     newItems.push(...shuffled.slice(0,2));
   }
@@ -521,8 +523,8 @@ function showPage(p){
 
 // ── FILTERS ──
 function setFilter(val){
-  // Strip emoji if present
-  catFilter=val.replace(/[^\u0000-\u05FF\s]/g,'').trim();
+  catFilter=cleanCat(val)||val;
+  currentPage=1;cachedSample=[];
   document.querySelectorAll('.fb-cat').forEach(b=>b.classList.remove('on'));
   document.getElementById('filter-'+(val==='הכל'?'all':val==='פותחים קופסא'?'cat1':val==='בין השורות'?'cat2':val==='דייט על קלף'?'cat3':'cat4')).classList.add('on');
   renderGrid();
@@ -544,24 +546,42 @@ function getSmartSample(items){
 
 let cachedSample=[];
 
+let currentPage=1;
+const PAGE_SIZE=8;
+
 function renderGrid(){
   const grid=document.getElementById('items-grid');
-  const wrap=document.getElementById('load-more-wrap');
+  const pgDiv=document.getElementById('pagination');
   
-  let toShow;
+  let pool;
   if(catFilter==='הכל'){
-    toShow=cachedSample;
-    wrap.style.display=allItemsLoaded?'none':'block';
+    // Smart order: ensure all categories represented
+    const cats=['פותחים קופסא','בין השורות','דייט על קלף','המיוחדים שלנו'];
+    if(cachedSample.length===0){
+      const first=[];
+      cats.forEach(cat=>{
+        const ci=items.filter(i=>cleanCat(i.cat)===cat).sort(()=>Math.random()-.5);
+        first.push(...ci.slice(0,2));
+      });
+      const usedIds=new Set(first.map(i=>i.id));
+      const rest=items.filter(i=>!usedIds.has(i.id)).sort(()=>Math.random()-.5);
+      cachedSample=[...first.sort(()=>Math.random()-.5),...rest];
+    }
+    pool=cachedSample;
   }else{
-    toShow=items.filter(i=>i.cat===catFilter);
-    wrap.style.display='none';
+    pool=items.filter(i=>cleanCat(i.cat)===catFilter);
   }
   
-  if(!toShow.length){
+  if(!pool.length){
     grid.innerHTML='<div class="empty"><div class="ei">&#128269;</div>לא נמצאו פריטים</div>';
-    wrap.style.display='none';
+    pgDiv.style.display='none';
     return;
   }
+  
+  const totalPages=Math.ceil(pool.length/PAGE_SIZE);
+  if(currentPage>totalPages)currentPage=1;
+  const start=(currentPage-1)*PAGE_SIZE;
+  const toShow=pool.slice(start,start+PAGE_SIZE);
   
   grid.innerHTML=toShow.map((item,idx)=>{
     const st=isAvailable(item);
@@ -569,15 +589,28 @@ function renderGrid(){
     return `<div class="card ${st!=='av'?'dim':''}" style="animation-delay:${idx*0.05}s" data-id="${item.id}">
       <img class="card-img" src="${img}" alt="${item.name}" loading="lazy" onerror="this.style.display='none'"/>
       <div class="card-body">
-        <div class="cbadge">${CAT_ICONS[item.cat]||''} ${item.cat}</div>
+        <div class="cbadge">${CAT_ICONS[cleanCat(item.cat)]||''} ${cleanCat(item.cat)}</div>
         <div class="cname">${item.name}</div>
         <div class="cdesc">${item.desc||''}</div>
         <div class="sdot ${st}">${statusLabel(st)}</div>
         <button class="bbtn" ${st!=='av'?'disabled':''} data-borrow="${item.id}">${st==='av'?'השאלה ←':'כרגע אצל זוג מאושר אחר ♥'}</button>
       </div></div>`;
   }).join('');
+  
   grid.querySelectorAll('[data-borrow]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openBorrowFromCard(btn.dataset.borrow);}));
   grid.querySelectorAll('[data-id]').forEach(card=>card.addEventListener('click',()=>openModal(card.dataset.id)));
+  
+  // Pagination buttons
+  if(totalPages<=1){pgDiv.style.display='none';return;}
+  pgDiv.style.display='flex';
+  pgDiv.innerHTML='';
+  for(let i=1;i<=totalPages;i++){
+    const btn=document.createElement('button');
+    btn.className='page-btn'+(i===currentPage?' on':'');
+    btn.textContent=i;
+    btn.addEventListener('click',()=>{currentPage=i;renderGrid();document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'});});
+    pgDiv.appendChild(btn);
+  }
 }
 
 // ── MODAL ──
@@ -908,11 +941,7 @@ async function fixCategories(){
 }
 // ── EVENT LISTENERS ──
 document.getElementById('nav-home-brand')?.addEventListener('click',e=>{e.preventDefault();showPage('home');window.scrollTo({top:0,behavior:'smooth'});});
-document.getElementById('btn-load-more')?.addEventListener('click',async()=>{
-  await loadItemsPage();
-  renderGrid();
-  document.getElementById('load-more-wrap').scrollIntoView({behavior:'smooth'});
-});
+
 document.getElementById('nav-catalog-btn')?.addEventListener('click',()=>{showPage('home');setTimeout(()=>document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'}),100);});
 document.getElementById('nav-about')?.addEventListener('click',()=>showPage('about'));
 document.getElementById('nav-borrow-btn')?.addEventListener('click',()=>{showPage('home');showSection('borrow');});
@@ -991,7 +1020,6 @@ document.querySelectorAll('#filters .fb-cat').forEach(btn=>{
 async function init(){
   document.getElementById('items-grid').innerHTML='<div class="empty"><div class="ei">&#8987;</div>טוען...</div>';
   await Promise.all([loadItems(), loadLoans()]);
-  await loadItemsPage(true);
   renderGrid();
 }
 init();
