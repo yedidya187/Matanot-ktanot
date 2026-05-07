@@ -505,13 +505,16 @@ function setFilter(val){
 
 // ── GRID ──
 function getSmartSample(items){
+  // First 8: 2 from each category, then rest randomly
   const cats=['פותחים קופסא','בין השורות','דייט על קלף','המיוחדים שלנו'];
-  const result=[];
+  const first=[];
+  const rest=[];
   cats.forEach(cat=>{
     const catItems=[...items.filter(i=>i.cat===cat)].sort(()=>Math.random()-.5);
-    result.push(...catItems.slice(0,2));
+    first.push(...catItems.slice(0,2));
+    rest.push(...catItems.slice(2));
   });
-  return result.sort(()=>Math.random()-.5);
+  return [...first.sort(()=>Math.random()-.5), ...rest.sort(()=>Math.random()-.5)];
 }
 
 let shownCount=8;
