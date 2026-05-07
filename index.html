@@ -385,7 +385,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
       <div id="admin-items" class="hidden">
         <div class="asec" style="display:flex;align-items:center;justify-content:space-between">
           <h3 id="items-title">פריטים (0)</h3>
-          <button class="editbtn" id="btn-new-item">&#10133; פריט חדש</button>
+          <button class="editbtn" id="btn-new-item" onclick="openEdit('-1')">&#10133; פריט חדש</button>
         </div>
         <div class="asec" style="padding:.5rem 0 0;border:none;background:none;margin:0">
           <div id="items-admin-list" class="iadmin"></div>
@@ -587,6 +587,9 @@ function selectBorrowItem(id){
   document.getElementById('f-name').value='';
   document.getElementById('f-phone').value='';
   document.getElementById('f-confirm').checked=false;
+  const sbtn=document.getElementById('btn-submit-borrow');
+  sbtn.disabled=false;
+  sbtn.textContent='סימון לקיחה \u{1F499}';
   document.getElementById('borrow-items-grid').classList.add('hidden');
   document.getElementById('borrow-form-wrap').classList.remove('hidden');
   document.getElementById('borrow-success').classList.add('hidden');
@@ -762,7 +765,7 @@ function renderAdminItems(){
 }
 
 // ── EDIT MODAL ──
-function openEdit(id){
+window.openEdit=function openEdit(id){
   const isNew=id==='-1';
   const item=isNew?{id:'-1',name:'',cat:'פותחים קופסא',desc:'',img:'',kitWe:'',kitYou:''}:items.find(i=>i.id===id);
   if(!item)return;
@@ -824,7 +827,7 @@ document.getElementById('tab-notif')?.addEventListener('click',()=>setAdminTab('
 document.getElementById('btn-clear-all-notif')?.addEventListener('click',clearAllNotifications);
 document.getElementById('tab-loans')?.addEventListener('click',()=>setAdminTab('loans'));
 document.getElementById('tab-items')?.addEventListener('click',()=>setAdminTab('items'));
-document.getElementById('btn-new-item')?.addEventListener('click',()=>openEdit('-1'));
+
 document.getElementById('btn-submit-borrow')?.addEventListener('click',submitBorrow);
 document.getElementById('borrow-search')?.addEventListener('input',e=>renderBorrowGrid(e.target.value));
 document.getElementById('borrow-search')?.addEventListener('input',e=>renderBorrowGrid(e.target.value));
