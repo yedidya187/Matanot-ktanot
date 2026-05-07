@@ -480,9 +480,46 @@ const PLACEHOLDERS = {'פותחים קופסא':'data:image/svg+xml;base64,PHN2Z
 let items=[], loans=[], selectedItem=null, catFilter='הכל', editId=null, editImgData='', modalItem=null;
 
 // ── LOAD DATA ──
+let lastDoc=null;
+let pageItems=[];  // items for current page display
+let allItems=[];   // all loaded items (grows as pages load)
+
+async function loadFirstPage(){
+  // Load first 8 items quickly
+  const q=query(collection(db,'items'),limit(8));
+  const snap=await getDocs(q);
+  lastDoc=snap.docs[snap.docs.length-1];
+  allItems=snap.docs.map(d=>({id:d.id,...d.data()}));
+  items=allItems;
+  cachedSample=[...allItems];
+}
+
+async function loadNextPage(){
+  if(!lastDoc)return false;
+  const q=query(collection(db,'items'),startAfter(lastDoc),limit(8));
+  const snap=await getDocs(q);
+  if(snap.empty){lastDoc=null;return false;}
+  lastDoc=snap.docs[snap.docs.length-1];
+  const newItems=snap.docs.map(d=>({id:d.id,...d.data()}));
+  allItems=[...allItems,...newItems];
+  items=allItems;
+  return true;
+}
+
+async function loadAllForFilter(){
+  // Load all items when filtering by category
+  if(allItems.length<37){
+    const snap=await getDocs(collection(db,'items'));
+    allItems=snap.docs.map(d=>({id:d.id,...d.data()}));
+    items=allItems;
+    lastDoc=null;
+  }
+}
+
 async function loadItems(){
-  const snap = await getDocs(collection(db,'items'));
-  items = snap.docs.map(d=>{const data=d.data();return {id:d.id,...data};});
+  const snap=await getDocs(collection(db,'items'));
+  items=snap.docs.map(d=>({id:d.id,...d.data()}));
+  allItems=items;
 }
 
 let allItemsLoaded=false;
@@ -525,9 +562,10 @@ function showPage(p){
 }
 
 // ── FILTERS ──
-function setFilter(val){
+async function setFilter(val){
   catFilter=cleanCat(val)||val;
   currentPage=1;cachedSample=[];
+  if(catFilter!=='הכל') await loadAllForFilter();
   document.querySelectorAll('.fb-cat').forEach(b=>b.classList.remove('on'));
   document.getElementById('filter-'+(val==='הכל'?'all':val==='פותחים קופסא'?'cat1':val==='בין השורות'?'cat2':val==='דייט על קלף'?'cat3':'cat4')).classList.add('on');
   renderGrid();
@@ -581,7 +619,8 @@ function renderGrid(){
     return;
   }
   
-  const totalPages=Math.ceil(pool.length/PAGE_SIZE);
+  const hasMore=lastDoc!==null&&catFilter==='הכל';
+  const totalPages=Math.ceil(pool.length/PAGE_SIZE)+(hasMore&&pool.length%PAGE_SIZE===0?1:0);
   if(currentPage>totalPages)currentPage=1;
   const start=(currentPage-1)*PAGE_SIZE;
   const toShow=pool.slice(start,start+PAGE_SIZE);
@@ -611,7 +650,16 @@ function renderGrid(){
     const btn=document.createElement('button');
     btn.className='page-btn'+(i===currentPage?' on':'');
     btn.textContent=i;
-    btn.addEventListener('click',()=>{currentPage=i;renderGrid();document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'});});
+    btn.addEventListener('click',async()=>{
+      currentPage=i;
+      // Load more from Firebase if needed
+      const needed=(i)*PAGE_SIZE;
+      while(allItems.length<needed && lastDoc){
+        await loadNextPage();
+      }
+      renderGrid();
+      document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'});
+    });
     pgDiv.appendChild(btn);
   }
 }
@@ -1023,8 +1071,8 @@ document.querySelectorAll('#filters .fb-cat').forEach(btn=>{
 async function init(){
   document.getElementById('items-grid').innerHTML='<div class="empty"><div class="ei">&#8987;</div>טוען...</div>';
   try{
-    await Promise.all([loadItems(), loadLoans()]);
-    renderGrid();
+    await Promise.all([loadFirstPage(), loadLoans()]);
+    cachedSample=[];renderGrid();
   }catch(e){
     document.getElementById('items-grid').innerHTML='<div class="empty"><div class="ei">&#9888;</div>שגיאה בטעינה. רענן את הדף.</div>';
     console.error(e);
