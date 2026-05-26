@@ -432,8 +432,8 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
           <button class="editbtn" id="btn-new-item" onclick="openEdit('-1')">&#10133; פריט חדש</button>
         </div>
         <div class="asec" style="padding:.75rem 1rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-          <input id="admin-search" placeholder="&#128269; חיפוש..." style="flex:1;min-width:140px;padding:.5rem .85rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem;direction:rtl" oninput="renderAdminItems()"/>
-          <select id="admin-cat-filter" style="padding:.5rem .85rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem;direction:rtl;background:var(--white)" onchange="renderAdminItems()">
+          <input id="admin-search" placeholder="&#128269; חיפוש..." style="flex:1;min-width:140px;padding:.5rem .85rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem;direction:rtl" id="admin-search"/>
+          <select id="admin-cat-filter" style="padding:.5rem .85rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem;direction:rtl;background:var(--white)">
             <option value="">כל הקטגוריות</option>
             <option>פותחים קופסא</option>
             <option>בין השורות</option>
