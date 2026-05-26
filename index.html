@@ -1090,6 +1090,8 @@ async function init(){
     console.error(e);
   }
 }
+document.getElementById('admin-search')?.addEventListener('input',()=>renderAdminItems());
+document.getElementById('admin-cat-filter')?.addEventListener('change',()=>renderAdminItems());
 init();
 </script>
 </body>
