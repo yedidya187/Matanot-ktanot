@@ -164,9 +164,9 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .sbadge.ret{background:rgba(155,142,196,.14);color:#6252A2}
 .retbtn{padding:.28rem .7rem;border-radius:.4rem;font-size:.76rem;font-weight:700;border:1.5px solid var(--teal);color:var(--teal);background:none;cursor:pointer;white-space:nowrap}
 .retbtn:hover{background:var(--teal);color:#fff}
-.irow{display:grid;grid-template-columns:40px 1fr auto auto auto;align-items:center;gap:.5rem;padding:.6rem .9rem;background:var(--cream);border:1px solid var(--border);border-radius:.5rem;font-size:.84rem}
-.irow .ithumb{width:40px;height:40px;border-radius:.4rem;object-fit:cover;background:var(--teal-light)}
-.irow .in{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.irow{display:flex;align-items:center;gap:.4rem;padding:.6rem .9rem;background:var(--cream);border:1px solid var(--border);border-radius:.5rem;font-size:.84rem;flex-wrap:wrap}
+.irow .ithumb{width:36px;height:36px;border-radius:.4rem;object-fit:cover;background:var(--teal-light);flex-shrink:0}
+.irow .in{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .iadmin{display:flex;flex-direction:column;gap:.4rem}
 .editbtn{padding:.26rem .7rem;border-radius:.4rem;font-size:.76rem;font-weight:700;border:1.5px solid var(--teal);color:var(--teal);background:none;cursor:pointer}
 .editbtn:hover{background:var(--teal);color:#fff}
@@ -197,6 +197,9 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .page-btn:hover,.page-btn.on{background:var(--teal);color:#fff;border-color:var(--teal)}
 .hidden{display:none!important}
 @media(max-width:600px){
+  .irow{grid-template-columns:36px 1fr;grid-template-rows:auto auto;}
+  .irow .editbtn,.irow .loanbtn,.irow .delbtn{font-size:.7rem;padding:.2rem .5rem;}
+
   .frow,.addrow{grid-template-columns:1fr}
   .nav{padding:0 .75rem}
   .admin-wrap{padding:1.5rem .75rem}
@@ -231,7 +234,8 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
     <p>
       מתנות קטנות הוא גמ"ח לרגעים הפשוטים שלכם ביחד. יש לנו משחקים, ספרים וערכות דייטים מפנקות שתוכלו לשאול ולהנות מזמן זוגי.<br/><br/>
       בואו לשרוף סיר פויקה ביחד בדייט שישי, לפתוח קלפים ולגלות עוד קצת דברים חדשים, להתחרות בדאבל אם אתם סבא וסבתא צעירים ברוח, להתכרבל על ספה מול סרט חודשיים אחרי החתונה, או סתם לפתוח ספר בנושא. אנחנו פה בשביל כולםםם.
-    </p>
+  
+      <br/><br/><em>אנחנו בתקופת הרצה של הגמ"ח והאתר. נשמח לכל הערה, הארה וביקורת. נשמח לשמוע איך היה לכם ולשפר מה שצריך. <a href="https://wa.me/972534303104" target="_blank" style="color:var(--teal-dark);font-weight:700;text-decoration:underline">זמינים בוואטסאפ</a> &#128149;</em>  </p>
     <button class="btn-hero" id="btn-to-catalog">אז איך זה עובד? ↓</button>
   </section>
 
@@ -277,7 +281,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
       <div id="section-borrow" class="hidden">
         <h2>לקחתי פריט &#128149;</h2>
         <p class="sub">חפשו או בחרו את הפריט שלקחתם</p>
-        <div class="fg" style="margin-bottom:1rem">
+        <div id="borrow-search-wrap" class="fg" style="margin-bottom:1rem">
           <input id="borrow-search" placeholder="&#128269; חיפוש פריט..." style="width:100%;padding:.68rem .95rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.93rem;color:var(--text);background:var(--white);outline:none;direction:rtl"/>
         </div>
         <div class="borrow-grid" id="borrow-items-grid"></div>
@@ -378,6 +382,16 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
         יש בזה משהו שממשיך את הלב של מתן ואת הטוב שהיה בו.
       </p>
       <p style="text-align:left;font-size:1.05rem;color:var(--lav);font-weight:700;margin-top:1rem">נועה</p>
+    </div>
+  </div>
+
+  <!-- תרומות -->
+  <div style="background:var(--teal-light);padding:2rem 1.5rem;text-align:center;border-top:1px solid var(--teal-mid)">
+    <div style="max-width:500px;margin:0 auto;text-align:right">
+      <p style="font-size:1rem;line-height:1.9;color:var(--text)">
+        אהבתם? נהנתם? מוזמנים <a href="https://links.payboxapp.com/9iwLc0XEV1b" target="_blank" style="color:var(--teal-dark);font-weight:700;text-decoration:underline">לתמוך בנו בפייבוקס</a> &#128149;<br/><br/>
+        מוזמנים גם <a href="https://wa.me/972534303104" target="_blank" style="color:var(--teal-dark);font-weight:700;text-decoration:underline">לספר לנו בוואטסאפ</a> איך היה, מה אהבתם, טיפים לאחרים, רעיונות וכל דבר אחר.
+      </p>
     </div>
   </div>
 
@@ -680,8 +694,8 @@ function openModal(id){
   const ks=document.getElementById('modal-kit-sections');
   ks.innerHTML='';
   if(item.cat==='המיוחדים שלנו'){
-    if(item.kitWe) ks.innerHTML+=`<div class="kit-section"><h4>&#9989; אנחנו כבר דאגנו ל...</h4><p>${item.kitWe}</p></div>`;
-    if(item.kitYou) ks.innerHTML+=`<div class="kit-section orange"><h4>&#127968; עוד קצת השקעה מהבית</h4><p>${item.kitYou}</p></div>`;
+    if(item.kitWe) ks.innerHTML+=`<div class="kit-section"><h4>&#9989; אנחנו כבר דאגנו ל...</h4><p style="white-space:pre-line">${item.kitWe}</p></div>`;
+    if(item.kitYou) ks.innerHTML+=`<div class="kit-section orange"><h4>&#127968; עוד קצת השקעה מהבית</h4><p style="white-space:pre-line">${item.kitYou}</p></div>`;
   }
   const btn=document.getElementById('modal-borrow-btn');
   btn.disabled=st!=='av';
@@ -743,6 +757,9 @@ function selectBorrowItem(id){
   document.getElementById('borrow-items-grid').classList.add('hidden');
   document.getElementById('borrow-form-wrap').classList.remove('hidden');
   document.getElementById('borrow-success').classList.add('hidden');
+  // Hide search when item selected
+  const searchWrap=document.getElementById('borrow-search-wrap');
+  if(searchWrap) searchWrap.style.display='none';
 }
 
 async function submitBorrow(){
@@ -911,6 +928,7 @@ function renderAdminItems(){
       <span class="in" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${item.name}</span>
       <span class="sbadge ${st==='av'?'act':'ret'}">${statusLabel(st)}</span>
       <button class="editbtn" data-eid="${item.id}">עריכה</button>
+      <button class="loanbtn" data-mlid="${item.id}" style="padding:.26rem .7rem;border-radius:.4rem;font-size:.76rem;font-weight:700;border:1.5px solid ${isAvailable(item)==='av'?'var(--lav)':'var(--teal-mid)'};color:${isAvailable(item)==='av'?'var(--lav)':'var(--teal-dark)'};background:none;cursor:pointer;white-space:nowrap">${isAvailable(item)==='av'?'📌':'✓'}</button>
       <button class="delbtn" data-did="${item.id}">הסר</button>
     </div>`;
   }).join('');
@@ -920,6 +938,27 @@ function renderAdminItems(){
     await deleteDoc(doc(db,'items',btn.dataset.did));
     items=items.filter(i=>i.id!==btn.dataset.did);
     renderAdminItems();renderGrid();
+  }));
+  list.querySelectorAll('[data-mlid]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const item=items.find(i=>i.id===btn.dataset.mlid);
+    if(!item)return;
+    if(isAvailable(item)!=='av'){
+      // Mark as returned
+      const activeLoan=loans.find(l=>l.itemId===item.id&&l.status==='פעיל'&&l.manual);
+      if(activeLoan){
+        if(!confirm('לסמן כהוחזר?'))return;
+        await updateDoc(doc(db,'loans',activeLoan.id),{status:'הוחזר'});
+        loans=loans.map(l=>l.id===activeLoan.id?{...l,status:'הוחזר'}:l);
+        renderAdminItems();renderGrid();renderAdminLoans();
+      }
+      return;
+    }
+    const name=prompt('שם מי שלקח:');
+    if(!name)return;
+    const loanData={itemId:item.id,item:item.name,name,phone:'מנהל',date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:true,manual:true};
+    const ref=await addDoc(collection(db,'loans'),loanData);
+    loans.push({id:ref.id,...loanData});
+    renderAdminItems();renderGrid();renderAdminLoans();
   }));
 }
 
@@ -1033,11 +1072,15 @@ document.getElementById('btn-cancel-borrow')?.addEventListener('click',()=>showS
 document.getElementById('btn-change-item')?.addEventListener('click',()=>{
   document.getElementById('borrow-form-wrap').classList.add('hidden');
   document.getElementById('borrow-items-grid').classList.remove('hidden');
+  const searchWrap=document.getElementById('borrow-search-wrap');
+  if(searchWrap) searchWrap.style.display='';
   renderBorrowGrid();
 });
 document.getElementById('btn-change-item')?.addEventListener('click',()=>{
   document.getElementById('borrow-form-wrap').classList.add('hidden');
   document.getElementById('borrow-items-grid').classList.remove('hidden');
+  const searchWrap=document.getElementById('borrow-search-wrap');
+  if(searchWrap) searchWrap.style.display='';
   renderBorrowGrid();
 });
 document.getElementById('btn-back-from-borrow')?.addEventListener('click',()=>showSection(null));
