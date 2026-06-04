@@ -808,24 +808,16 @@ async function submitBorrow(){
     document.getElementById('borrow-form-wrap').classList.add('hidden');
     document.getElementById('borrow-success').classList.remove('hidden');
     renderAdminLoans();renderNotifications();
-  // Simple browser notification
-  if(Notification.permission==='granted'){
-    try{
-      new Notification('השאלה חדשה ♥', {
+  // Send notification via SW (works on Android)
+  if(Notification.permission==='granted' && 'serviceWorker' in navigator){
+    navigator.serviceWorker.ready.then(reg=>{
+      reg.showNotification('השאלה חדשה ♥',{
         body: name + ' לקח/ה את ' + itemsToLoan.map(i=>i.name).join(', '),
         icon: 'logo.gif',
-        dir: 'rtl'
+        dir: 'rtl',
+        vibrate: [200,100,200]
       });
-    }catch(e){
-      // Fallback for mobile - use SW
-      if('serviceWorker' in navigator){
-        navigator.serviceWorker.ready.then(reg=>reg.showNotification('השאלה חדשה ♥',{
-          body: name + ' לקח/ה את ' + itemsToLoan.map(i=>i.name).join(', '),
-          icon: 'logo.gif',
-          dir: 'rtl'
-        })).catch(()=>{});
-      }
-    }
+    }).catch(()=>{});
   }
   }catch(e){
     alert('שגיאה בשמירה, נסה שוב');
