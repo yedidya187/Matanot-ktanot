@@ -2,6 +2,15 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8"/>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-804JS3PX6V"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-804JS3PX6V');
+</script>
+
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♥</text></svg>"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>מתנות קטנות</title>
@@ -702,6 +711,9 @@ function openModal(id){
   btn.innerHTML=st==='av'?'השאלה &#128154;':'לא זמין כעת';
   document.getElementById('modal-overlay').classList.remove('hidden');
   document.body.style.overflow='hidden';
+  // Track view
+  updateDoc(doc(db,'items',item.id),{views:(item.views||0)+1}).catch(()=>{});
+  item.views=(item.views||0)+1;
 }
 
 // ── BORROW ──
@@ -779,6 +791,12 @@ async function submitBorrow(){
     const loanData={itemId:selectedItem.id,item:selectedItem.name,name,phone,date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:false};
     const ref=await addDoc(collection(db,'loans'),loanData);
     loans.push({id:ref.id,...loanData});
+    // Track borrow count
+    const borrowedItem=items.find(i=>i.id===loanData.itemId);
+    if(borrowedItem){
+      updateDoc(doc(db,'items',loanData.itemId),{borrows:(borrowedItem.borrows||0)+1}).catch(()=>{});
+      borrowedItem.borrows=(borrowedItem.borrows||0)+1;
+    }
     renderGrid();
     document.getElementById('borrow-form-wrap').classList.add('hidden');
     document.getElementById('borrow-success').classList.remove('hidden');
