@@ -597,6 +597,9 @@ function showPage(p){
   ['home','about','admin'].forEach(x=>document.getElementById('page-'+x).classList.toggle('hidden',x!==p));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
   const nb=document.getElementById('nav-'+p);if(nb)nb.classList.add('on');
+  // Track page view in Analytics
+  const pageNames={'home':'דף ראשי','about':'אודות','admin':'ניהול'};
+  if(typeof gtag!=='undefined') gtag('event','page_view',{page_title:pageNames[p]||p,page_location:window.location.href+'#'+p});
 }
 
 // ── FILTERS ──
@@ -718,6 +721,7 @@ function openModal(id){
 
 // ── BORROW ──
 function showSection(sec){
+  if(sec&&typeof gtag!=='undefined') gtag('event',sec==='borrow'?'borrow_start':'return_start');
   document.getElementById('section-borrow').classList.toggle('hidden',sec!=='borrow');
   document.getElementById('section-return').classList.toggle('hidden',sec!=='return');
   document.getElementById('action-sec').scrollIntoView({behavior:'smooth'});
