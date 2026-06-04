@@ -2,6 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8"/>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#4A9E7E"/>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-804JS3PX6V"></script>
 <script>
@@ -805,6 +807,17 @@ async function submitBorrow(){
     document.getElementById('borrow-form-wrap').classList.add('hidden');
     document.getElementById('borrow-success').classList.remove('hidden');
     renderAdminLoans();renderNotifications();
+  // Local notification to admin if sw registered
+  if('serviceWorker' in navigator && Notification.permission==='granted'){
+    navigator.serviceWorker.ready.then(reg=>{
+      reg.showNotification('השאלה חדשה ♥', {
+        body: name + ' לקח/ה את ' + itemsToLoan.map(i=>i.name).join(', '),
+        icon: 'logo.gif',
+        dir: 'rtl',
+        vibrate: [200,100,200]
+      });
+    }).catch(()=>{});
+  }
   }catch(e){
     alert('שגיאה בשמירה, נסה שוב');
     btn.disabled=false;
@@ -842,6 +855,16 @@ function tryLogin(){
     document.getElementById('admin-login').classList.add('hidden');
     document.getElementById('admin-panel').classList.remove('hidden');
     document.getElementById('admin-err').style.display='none';
+    // Register service worker and request push permission
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('sw.js').then(reg=>{
+        if(Notification.permission==='default'){
+          Notification.requestPermission().then(p=>{
+            if(p==='granted') console.log('התראות אושרו!');
+          });
+        }
+      });
+    }
     if(Notification&&Notification.permission==='default')Notification.requestPermission();
     startPolling();
     Promise.all([loadLoans(), loadItems()]).then(()=>{renderAdminLoans();renderNotifications();renderAdminItems();});

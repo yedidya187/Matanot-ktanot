@@ -1,0 +1,18 @@
+{
+  "name": "מתנות קטנות",
+  "short_name": "מתנות קטנות",
+  "description": "גמ\"ח מתנות קטנות - לרגעים הפשוטים שלכם ביחד",
+  "start_url": "/Matanot-ktanot/",
+  "display": "standalone",
+  "background_color": "#F4EDE0",
+  "theme_color": "#4A9E7E",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%234A9E7E' rx='24'/><text y='140' x='96' font-size='120' text-anchor='middle'>♥</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
