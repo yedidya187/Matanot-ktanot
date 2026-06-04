@@ -431,6 +431,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
         <h1 style="font-size:1.5rem;color:var(--teal-dark);font-weight:700">לוח ניהול</h1>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap">
           <button style="background:none;border:1px solid var(--teal-mid);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--teal-dark);font-family:'SiteFont','Heebo',sans-serif;font-size:.78rem" id="btn-fix-cats">תקן קטגוריות</button>
+          <button style="background:none;border:1px solid var(--lav);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--lav);font-family:'SiteFont','Heebo',sans-serif;font-size:.78rem" id="btn-enable-notif">🔔 אפשר התראות</button>
           <button style="background:none;border:1px solid var(--border);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--text-mid);font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem" id="btn-logout">התנתקות</button>
         </div>
       </div>
@@ -807,16 +808,24 @@ async function submitBorrow(){
     document.getElementById('borrow-form-wrap').classList.add('hidden');
     document.getElementById('borrow-success').classList.remove('hidden');
     renderAdminLoans();renderNotifications();
-  // Local notification to admin if sw registered
-  if('serviceWorker' in navigator && Notification.permission==='granted'){
-    navigator.serviceWorker.ready.then(reg=>{
-      reg.showNotification('השאלה חדשה ♥', {
+  // Simple browser notification
+  if(Notification.permission==='granted'){
+    try{
+      new Notification('השאלה חדשה ♥', {
         body: name + ' לקח/ה את ' + itemsToLoan.map(i=>i.name).join(', '),
         icon: 'logo.gif',
-        dir: 'rtl',
-        vibrate: [200,100,200]
+        dir: 'rtl'
       });
-    }).catch(()=>{});
+    }catch(e){
+      // Fallback for mobile - use SW
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.ready.then(reg=>reg.showNotification('השאלה חדשה ♥',{
+          body: name + ' לקח/ה את ' + itemsToLoan.map(i=>i.name).join(', '),
+          icon: 'logo.gif',
+          dir: 'rtl'
+        })).catch(()=>{});
+      }
+    }
   }
   }catch(e){
     alert('שגיאה בשמירה, נסה שוב');
@@ -1104,6 +1113,22 @@ document.getElementById('btn-admin-about')?.addEventListener('click',()=>showPag
 document.getElementById('btn-login')?.addEventListener('click',tryLogin);
 document.getElementById('admin-pass-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
 document.getElementById('btn-fix-cats')?.addEventListener('click',fixCategories);
+document.getElementById('btn-enable-notif')?.addEventListener('click',async()=>{
+  if(!('Notification' in window)){alert('הדפדפן לא תומך בהתראות');return;}
+  const p=await Notification.requestPermission();
+  if(p==='granted'){
+    // Register SW and test
+    if('serviceWorker' in navigator){
+      const reg=await navigator.serviceWorker.register('sw.js');
+      await reg.showNotification('✅ התראות פועלות!',{body:'תקבל התראה על כל השאלה חדשה',icon:'logo.gif',dir:'rtl'});
+    }else{
+      new Notification('✅ התראות פועלות!',{body:'תקבל התראה על כל השאלה חדשה'});
+    }
+    document.getElementById('btn-enable-notif').textContent='✅ התראות פעילות';
+  }else{
+    alert('לא אושרו התראות. נסה להפעיל ידנית בהגדרות הדפדפן');
+  }
+});
 document.getElementById('btn-logout')?.addEventListener('click',()=>{stopPolling();document.getElementById('admin-login').classList.remove('hidden');document.getElementById('admin-panel').classList.add('hidden');document.getElementById('admin-pass-input').value='';showPage('home');});
 document.getElementById('tab-notif')?.addEventListener('click',()=>setAdminTab('notif'));
 document.getElementById('btn-clear-all-notif')?.addEventListener('click',clearAllNotifications);
