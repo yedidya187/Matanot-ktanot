@@ -173,6 +173,26 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .sbadge{font-size:.7rem;font-weight:700;padding:.16rem .55rem;border-radius:2rem;white-space:nowrap}
 .sbadge.act{background:rgba(74,158,126,.14);color:#2A7A50}
 .sbadge.ret{background:rgba(155,142,196,.14);color:#6252A2}
+.lhead{display:grid;grid-template-columns:50px 1fr 100px 80px;align-items:center;gap:.5rem .7rem;padding:.35rem .9rem;font-size:.76rem;color:var(--text-mid);font-weight:700}
+.lhead span{cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:.2rem}
+.lhead span:hover{color:var(--teal-dark)}
+.lhead span.sort-on{color:var(--teal-dark)}
+.sort-arrow{font-size:.7rem}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.7rem;margin-bottom:1.2rem}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:.8rem;padding:.9rem 1rem;text-align:center}
+.stat-card .sv{font-size:1.6rem;font-weight:700;color:var(--teal-dark)}
+.stat-card .sl{font-size:.76rem;color:var(--text-mid);margin-top:.2rem}
+.bar-row{display:flex;align-items:center;gap:.6rem;margin-bottom:.55rem;font-size:.82rem}
+.bar-label{width:110px;flex-shrink:0;color:var(--text-mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;background:var(--teal-light);border-radius:.4rem;height:1.15rem;overflow:hidden}
+.bar-fill{height:100%;background:var(--teal);border-radius:.4rem;transition:width .4s ease}
+.bar-fill.lav{background:var(--lav)}
+.bar-val{width:34px;text-align:left;font-weight:700;color:var(--teal-dark);flex-shrink:0}
+.trend-chart{display:flex;align-items:flex-end;gap:.5rem;height:120px;padding:0 .3rem}
+.trend-bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:.3rem;justify-content:flex-end;height:100%}
+.trend-bar-fill{width:100%;background:var(--teal);border-radius:.3rem .3rem 0 0;min-height:2px}
+.trend-bar-label{font-size:.68rem;color:var(--text-mid);white-space:nowrap}
+.trend-bar-val{font-size:.72rem;font-weight:700;color:var(--teal-dark)}
 .retbtn{padding:.28rem .7rem;border-radius:.4rem;font-size:.76rem;font-weight:700;border:1.5px solid var(--teal);color:var(--teal);background:none;cursor:pointer;white-space:nowrap}
 .retbtn:hover{background:var(--teal);color:#fff}
 .irow{display:flex;align-items:center;gap:.4rem;padding:.6rem .9rem;background:var(--cream);border:1px solid var(--border);border-radius:.5rem;font-size:.84rem;flex-wrap:wrap}
@@ -439,6 +459,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
         <button class="atab on" id="tab-notif">&#128149; התראות <span class="notif-badge hidden" id="notif-badge"></span></button>
         <button class="atab" id="tab-loans">&#128203; השאלות</button>
         <button class="atab" id="tab-items">&#127922; פריטים</button>
+        <button class="atab" id="tab-stats">&#128202; דשבורד</button>
       </div>
       <div id="admin-notif">
         <div class="asec">
@@ -449,6 +470,12 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
       <div id="admin-loans" class="hidden">
         <div class="asec">
           <h3 id="loans-title">ניהול השאלות (0)</h3>
+          <div class="lhead">
+            <span></span>
+            <span data-sortcol="item">פריט</span>
+            <span data-sortcol="date">תאריך <span class="sort-arrow" id="sort-arrow-date"></span></span>
+            <span data-sortcol="status">סטטוס <span class="sort-arrow" id="sort-arrow-status"></span></span>
+          </div>
           <div id="loans-list"><div class="empty"><div class="ei">&#128237;</div>אין השאלות עדיין</div></div>
         </div>
       </div>
@@ -470,6 +497,9 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
         <div class="asec" style="padding:.5rem 0 0;border:none;background:none;margin:0">
           <div id="items-admin-list" class="iadmin"></div>
         </div>
+      </div>
+      <div id="admin-stats" class="hidden">
+        <div id="stats-content"></div>
       </div>
     </div>
   </div>
@@ -525,6 +555,7 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyC0ErwzHBOVTsuKp-rdc15lKMoZ70T93Jw",
@@ -536,17 +567,41 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+// One fixed admin account created once in Firebase Console → Authentication.
+// The password box in the UI stays the same; only the actual check moves
+// from "compare to a string in this file" to real server-side verification.
+const ADMIN_EMAIL = 'admin@matanot-ktanot.local';
+// Paste the "Web app URL" you get after deploying the Google Apps Script
+// (see setup instructions) between the quotes below. Leave empty ('') to
+// keep Telegram notifications off.
+const TELEGRAM_WEBHOOK_URL = '';
+function notifyTelegram(loanData){
+  if(!TELEGRAM_WEBHOOK_URL) return;
+  fetch(TELEGRAM_WEBHOOK_URL,{
+    method:'POST',
+    mode:'no-cors', // Apps Script web apps don't return CORS headers; we don't need to read the response
+    headers:{'Content-Type':'text/plain'}, // avoids a CORS preflight request
+    body:JSON.stringify({name:loanData.name,phone:loanData.phone,item:loanData.item,date:loanData.date})
+  }).catch(()=>{}); // best-effort only - a failed notification should never block borrowing
+}
 function cleanCat(cat){
   if(!cat)return '';
   return cat.replace(/[^\u0000-\u05FF\s\-]/gu,'').trim();
 }
+// Escapes any value before it is inserted into innerHTML, so data typed by
+// visitors (borrower name/phone) or stored in Firestore can never be
+// interpreted as HTML/JS by the browser (prevents stored XSS).
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 
-const ADMIN_PASS = '3231';
 const CAT_ICONS = {'פותחים קופסא':'&#127183;','בין השורות':'&#128214;','דייט על קלף':'&#128149;','המיוחדים שלנו':'&#127873;'};
 const PLACEHOLDERS = {'פותחים קופסא':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI2MCIgZmlsbD0iI0VBRjVGMCIgcng9IjEyIi8+PHRleHQgeD0iMjAwIiB5PSIxNTAiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfg48</text></svg>','בין השורות':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI2MCIgZmlsbD0iI0VBRjVGMCIgcng9IjEyIi8+PHRleHQgeD0iMjAwIiB5PSIxNTAiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfkJY8L3RleHQ+PC9zdmc+','דייט על קלף':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI2MCIgZmlsbD0iI0VBRjVGMCIgcng9IjEyIi8+PHRleHQgeD0iMjAwIiB5PSIxNTAiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfmIk8L3RleHQ+PC9zdmc+','המיוחדים שלנו':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI2MCIgZmlsbD0iI0VBRjVGMCIgcng9IjEyIi8+PHRleHQgeD0iMjAwIiB5PSIxNTAiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfmrs8L3RleHQ+PC9zdmc+'};
 
 let items=[], loans=[], selectedItem=null, catFilter='הכל', editId=null, editImgData='', modalItem=null;
+let loanSort={col:'date',dir:'desc'};
 
 // ── LOAD DATA ──
 async function loadItems(){
@@ -671,11 +726,11 @@ function renderGrid(){
     const st=isAvailable(item);
     const img=item.img||PLACEHOLDERS[item.cat]||'';
     return `<div class="card ${st!=='av'?'dim':''}" style="animation-delay:${idx*0.05}s" data-id="${item.id}">
-      <img class="card-img" src="${img}" alt="${item.name}" loading="lazy" onerror="this.style.display='none'"/>
+      <img class="card-img" src="${img}" alt="${esc(item.name)}" loading="lazy" onerror="this.style.display='none'"/>
       <div class="card-body">
-        <div class="cbadge">${CAT_ICONS[cleanCat(item.cat)]||''} ${cleanCat(item.cat)}</div>
-        <div class="cname">${item.name}</div>
-        <div class="cdesc">${item.desc||''}</div>
+        <div class="cbadge">${CAT_ICONS[cleanCat(item.cat)]||''} ${esc(cleanCat(item.cat))}</div>
+        <div class="cname">${esc(item.name)}</div>
+        <div class="cdesc">${esc(item.desc||'')}</div>
         <div class="sdot ${st}">${statusLabel(st)}</div>
         <button class="bbtn" ${st!=='av'?'disabled':''} data-borrow="${item.id}">${st==='av'?'השאלה ←':'כרגע אצל זוג מאושר אחר ♥'}</button>
       </div></div>`;
@@ -703,14 +758,14 @@ function openModal(id){
   modalItem=item;
   const st=isAvailable(item);
   document.getElementById('modal-img').src=item.img||PLACEHOLDERS[item.cat]||'';
-  document.getElementById('modal-badge').innerHTML=(CAT_ICONS[item.cat]||'')+' '+item.cat;
+  document.getElementById('modal-badge').innerHTML=(CAT_ICONS[item.cat]||'')+' '+esc(item.cat);
   document.getElementById('modal-name').textContent=item.name;
   document.getElementById('modal-desc').textContent=item.desc||'';
   const ks=document.getElementById('modal-kit-sections');
   ks.innerHTML='';
   if(item.cat==='המיוחדים שלנו'){
-    if(item.kitWe) ks.innerHTML+=`<div class="kit-section"><h4>&#9989; אנחנו כבר דאגנו ל...</h4><p style="white-space:pre-line">${item.kitWe}</p></div>`;
-    if(item.kitYou) ks.innerHTML+=`<div class="kit-section orange"><h4>&#127968; עוד קצת השקעה מהבית</h4><p style="white-space:pre-line">${item.kitYou}</p></div>`;
+    if(item.kitWe) ks.innerHTML+=`<div class="kit-section"><h4>&#9989; אנחנו כבר דאגנו ל...</h4><p style="white-space:pre-line">${esc(item.kitWe)}</p></div>`;
+    if(item.kitYou) ks.innerHTML+=`<div class="kit-section orange"><h4>&#127968; עוד קצת השקעה מהבית</h4><p style="white-space:pre-line">${esc(item.kitYou)}</p></div>`;
   }
   const btn=document.getElementById('modal-borrow-btn');
   btn.disabled=st!=='av';
@@ -749,9 +804,9 @@ function renderBorrowGrid(query=''){
   grid.innerHTML=available.map(item=>{
     const img=item.img||PLACEHOLDERS[item.cat]||'';
     return `<div class="borrow-card" data-bid="${item.id}">
-      <img class="bc-img" src="${img}" alt="${item.name}" loading="lazy" onerror="this.style.display='none'"/>
-      <div class="bc-name">${item.name}</div>
-      <div class="bc-cat">${item.cat}</div>
+      <img class="bc-img" src="${img}" alt="${esc(item.name)}" loading="lazy" onerror="this.style.display='none'"/>
+      <div class="bc-name">${esc(item.name)}</div>
+      <div class="bc-cat">${esc(item.cat)}</div>
     </div>`;
   }).join('');
   grid.querySelectorAll('[data-bid]').forEach(c=>c.addEventListener('click',()=>selectBorrowItem(c.dataset.bid)));
@@ -808,11 +863,12 @@ async function submitBorrow(){
     document.getElementById('borrow-form-wrap').classList.add('hidden');
     document.getElementById('borrow-success').classList.remove('hidden');
     renderAdminLoans();renderNotifications();
+    notifyTelegram(loanData);
   // Send notification via SW (works on Android)
   if(Notification.permission==='granted' && 'serviceWorker' in navigator){
     navigator.serviceWorker.ready.then(reg=>{
       reg.showNotification('השאלה חדשה ♥',{
-        body: name + ' לקח/ה את ' + itemsToLoan.map(i=>i.name).join(', '),
+        body: name + ' לקח/ה את ' + selectedItem.name,
         icon: 'logo.gif',
         dir: 'rtl',
         vibrate: [200,100,200]
@@ -836,26 +892,35 @@ function lookupLoans(){
   document.getElementById('r-loans-list').classList.remove('hidden');
   document.getElementById('r-items').innerHTML=active.map(l=>`
     <div class="r-loan-item">
-      <div><div class="r-loan-name">${l.item}</div><div class="r-loan-date">נלקח ב: ${l.date||''}</div></div>
+      <div><div class="r-loan-name">${esc(l.item)}</div><div class="r-loan-date">נלקח ב: ${esc(l.date||'')}</div></div>
       <button class="r-return-btn" data-lid="${l.id}">סימון החזרה &#9996;</button>
     </div>`).join('');
   document.getElementById('r-items').querySelectorAll('[data-lid]').forEach(btn=>btn.addEventListener('click',()=>confirmReturn(btn.dataset.lid)));
 }
 
 async function confirmReturn(loanId){
-  await updateDoc(doc(db,'loans',loanId),{status:'הוחזר'});
-  loans=loans.map(l=>l.id===loanId?{...l,status:'הוחזר'}:l);
+  const returnedTimestamp=new Date().toISOString();
+  await updateDoc(doc(db,'loans',loanId),{status:'הוחזר',returnedTimestamp});
+  loans=loans.map(l=>l.id===loanId?{...l,status:'הוחזר',returnedTimestamp}:l);
   renderGrid();
   document.getElementById('r-loans-list').classList.add('hidden');
   document.getElementById('r-success').classList.remove('hidden');
 }
 
 // ── ADMIN ──
-function tryLogin(){
-  if(document.getElementById('admin-pass-input').value===ADMIN_PASS){
+async function tryLogin(){
+  const pass=document.getElementById('admin-pass-input').value;
+  const btn=document.getElementById('btn-login');
+  btn.disabled=true;
+  try{
+    // Verified by Firebase Auth on the server, not by comparing strings
+    // in this file — this is what actually protects the write/delete
+    // operations below, together with the Firestore security rules.
+    await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pass);
     document.getElementById('admin-login').classList.add('hidden');
     document.getElementById('admin-panel').classList.remove('hidden');
     document.getElementById('admin-err').style.display='none';
+    document.getElementById('admin-pass-input').value='';
     // Register service worker and request push permission
     if('serviceWorker' in navigator){
       navigator.serviceWorker.register('sw.js').then(reg=>{
@@ -870,33 +935,67 @@ function tryLogin(){
     startPolling();
     Promise.all([loadLoans(), loadItems()]).then(()=>{renderAdminLoans();renderNotifications();renderAdminItems();});
     if(Notification&&Notification.permission==='default') Notification.requestPermission();
-  }else document.getElementById('admin-err').style.display='block';
+  }catch(e){
+    document.getElementById('admin-err').style.display='block';
+  }finally{
+    btn.disabled=false;
+  }
 }
 
 function setAdminTab(tab){
-  ['notif','loans','items'].forEach(t=>{
+  ['notif','loans','items','stats'].forEach(t=>{
     document.getElementById('admin-'+t).classList.toggle('hidden',t!==tab);
     document.getElementById('tab-'+t).classList.toggle('on',t===tab);
   });
   if(tab==='notif') renderNotifications();
+  if(tab==='stats') renderStats();
 }
 
+function sortedLoans(){
+  const {col,dir}=loanSort;
+  const mult=dir==='asc'?1:-1;
+  return [...loans].sort((a,b)=>{
+    let av,bv;
+    if(col==='date'){av=a.timestamp||a.date||'';bv=b.timestamp||b.date||'';}
+    else if(col==='status'){av=a.status||'';bv=b.status||'';}
+    else{av=(a.item||'').toLowerCase();bv=(b.item||'').toLowerCase();}
+    if(av<bv)return -1*mult;
+    if(av>bv)return 1*mult;
+    return 0;
+  });
+}
+function updateSortArrows(){
+  ['date','status'].forEach(c=>{
+    const arrow=document.getElementById('sort-arrow-'+c);
+    const head=document.querySelector(`[data-sortcol="${c}"]`);
+    if(!arrow||!head)return;
+    if(loanSort.col===c){
+      arrow.textContent=loanSort.dir==='asc'?'▲':'▼';
+      head.classList.add('sort-on');
+    }else{
+      arrow.textContent='';
+      head.classList.remove('sort-on');
+    }
+  });
+}
 function renderAdminLoans(){
   const el=document.getElementById('loans-list');
   document.getElementById('loans-title').textContent=`ניהול השאלות (${loans.length})`;
+  updateSortArrows();
   if(!loans.length){el.innerHTML='<div class="empty"><div class="ei">&#128237;</div>אין השאלות עדיין</div>';return;}
-  el.innerHTML=loans.map(l=>`
+  el.innerHTML=sortedLoans().map(l=>`
     <div class="lrow">
       <span class="lid" style="font-weight:700;color:var(--teal);font-size:.8rem">${l.id.slice(-4)}</span>
-      <span style="font-weight:600;font-size:.84rem">${l.item}</span>
-      <span class="sbadge ${l.status==='פעיל'?'act':'ret'}">${l.status}</span>
-      <span style="color:var(--text-mid);font-size:.78rem;grid-column:2">${l.name} &middot; ${l.phone} &middot; ${l.date||''}</span>
+      <span style="font-weight:600;font-size:.84rem">${esc(l.item)}</span>
+      <span class="sbadge ${l.status==='פעיל'?'act':'ret'}">${esc(l.status)}</span>
+      <span style="color:var(--text-mid);font-size:.78rem;grid-column:2">${esc(l.name)} &middot; ${esc(l.phone)} &middot; ${esc(l.date||'')}</span>
       ${l.status==='פעיל'?`<button class="retbtn" data-lid="${l.id}">החזיר</button>`:''}
       <button class="delbtn" data-del="${l.id}" style="font-size:.72rem;padding:.22rem .55rem">מחק</button>
     </div>`).join('');
   el.querySelectorAll('[data-lid]').forEach(btn=>btn.addEventListener('click',async()=>{
-    await updateDoc(doc(db,'loans',btn.dataset.lid),{status:'הוחזר'});
-    loans=loans.map(l=>l.id===btn.dataset.lid?{...l,status:'הוחזר'}:l);
+    const returnedTimestamp=new Date().toISOString();
+    await updateDoc(doc(db,'loans',btn.dataset.lid),{status:'הוחזר',returnedTimestamp});
+    loans=loans.map(l=>l.id===btn.dataset.lid?{...l,status:'הוחזר',returnedTimestamp}:l);
     renderAdminLoans();renderGrid();
   }));
   el.querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click',async()=>{
@@ -906,6 +1005,14 @@ function renderAdminLoans(){
     renderAdminLoans();renderNotifications();
   }));
 }
+document.querySelectorAll('.lhead [data-sortcol]').forEach(head=>{
+  head.addEventListener('click',()=>{
+    const col=head.dataset.sortcol;
+    if(loanSort.col===col) loanSort.dir=loanSort.dir==='asc'?'desc':'asc';
+    else loanSort={col,dir:'desc'};
+    renderAdminLoans();
+  });
+});
 
 // ── ADMIN POLLING ──
 let lastLoanCount=0, pollingInterval=null;
@@ -944,7 +1051,7 @@ function renderNotifications(){
   list.innerHTML=unseen.map(l=>`
     <div class="notif-item">
       <div style="font-size:1.5rem">&#128149;</div>
-      <div class="notif-body"><strong>${l.name}</strong> לקח את <strong>${l.item}</strong><div class="notif-date">${l.date||''} &middot; ${l.phone}</div></div>
+      <div class="notif-body"><strong>${esc(l.name)}</strong> לקח את <strong>${esc(l.item)}</strong><div class="notif-date">${esc(l.date||'')} &middot; ${esc(l.phone)}</div></div>
       <button class="notif-seen" data-nid="${l.id}">&#10003;</button>
     </div>`).join('');
   list.querySelectorAll('[data-nid]').forEach(btn=>btn.addEventListener('click',async()=>{
@@ -970,8 +1077,8 @@ function renderAdminItems(){
     const img=item.img||PLACEHOLDERS[item.cat]||'';
     const st=isAvailable(item);
     return `<div class="irow">
-      <img class="ithumb" src="${img}" alt="${item.name}" onerror="this.style.display='none'"/>
-      <span class="in" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${item.name}</span>
+      <img class="ithumb" src="${img}" alt="${esc(item.name)}" onerror="this.style.display='none'"/>
+      <span class="in" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${esc(item.name)}</span>
       <span class="sbadge ${st==='av'?'act':'ret'}">${statusLabel(st)}</span>
       <button class="editbtn" data-eid="${item.id}">עריכה</button>
       <button class="loanbtn" data-mlid="${item.id}" style="padding:.26rem .7rem;border-radius:.4rem;font-size:.76rem;font-weight:700;border:1.5px solid ${isAvailable(item)==='av'?'var(--lav)':'var(--teal-mid)'};color:${isAvailable(item)==='av'?'var(--lav)':'var(--teal-dark)'};background:none;cursor:pointer;white-space:nowrap">${isAvailable(item)==='av'?'📌':'✓'}</button>
@@ -993,8 +1100,9 @@ function renderAdminItems(){
       const activeLoan=loans.find(l=>l.itemId===item.id&&l.status==='פעיל'&&l.manual);
       if(activeLoan){
         if(!confirm('לסמן כהוחזר?'))return;
-        await updateDoc(doc(db,'loans',activeLoan.id),{status:'הוחזר'});
-        loans=loans.map(l=>l.id===activeLoan.id?{...l,status:'הוחזר'}:l);
+        const returnedTimestamp=new Date().toISOString();
+        await updateDoc(doc(db,'loans',activeLoan.id),{status:'הוחזר',returnedTimestamp});
+        loans=loans.map(l=>l.id===activeLoan.id?{...l,status:'הוחזר',returnedTimestamp}:l);
         renderAdminItems();renderGrid();renderAdminLoans();
       }
       return;
@@ -1005,7 +1113,95 @@ function renderAdminItems(){
     const ref=await addDoc(collection(db,'loans'),loanData);
     loans.push({id:ref.id,...loanData});
     renderAdminItems();renderGrid();renderAdminLoans();
+    notifyTelegram(loanData);
   }));
+}
+
+// ── DASHBOARD / STATS ──
+function renderStats(){
+  const el=document.getElementById('stats-content');
+  if(!loans.length){el.innerHTML='<div class="asec"><div class="empty"><div class="ei">&#128202;</div>עדיין אין מספיק נתונים להצגת דשבורד</div></div>';return;}
+
+  const total=loans.length;
+  const active=loans.filter(l=>l.status==='פעיל').length;
+  const returned=total-active;
+
+  // Category breakdown (join loan -> item -> category)
+  const itemCatById={};
+  items.forEach(i=>{itemCatById[i.id]=cleanCat(i.cat)||'לא ידוע';});
+  const byCat={};
+  loans.forEach(l=>{
+    const cat=itemCatById[l.itemId]||'לא ידוע';
+    byCat[cat]=(byCat[cat]||0)+1;
+  });
+  const catEntries=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const catMax=catEntries.length?catEntries[0][1]:1;
+
+  // Most borrowed items
+  const byItem={};
+  loans.forEach(l=>{byItem[l.item]=(byItem[l.item]||0)+1;});
+  const itemEntries=Object.entries(byItem).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const itemMax=itemEntries.length?itemEntries[0][1]:1;
+
+  // Monthly trend - last 6 months
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push({key:`${d.getFullYear()}-${d.getMonth()}`,label:d.toLocaleDateString('he-IL',{month:'short'}),count:0});
+  }
+  loans.forEach(l=>{
+    const ts=l.timestamp?new Date(l.timestamp):null;
+    if(!ts||isNaN(ts))return;
+    const key=`${ts.getFullYear()}-${ts.getMonth()}`;
+    const m=months.find(m=>m.key===key);
+    if(m)m.count++;
+  });
+  const monthMax=Math.max(1,...months.map(m=>m.count));
+
+  // Average loan duration (days) - only loans with both timestamps recorded
+  const durations=loans.filter(l=>l.timestamp&&l.returnedTimestamp).map(l=>{
+    const start=new Date(l.timestamp),end=new Date(l.returnedTimestamp);
+    return (end-start)/(1000*60*60*24);
+  }).filter(d=>d>=0);
+  const avgDuration=durations.length?(durations.reduce((a,b)=>a+b,0)/durations.length):null;
+
+  el.innerHTML=`
+    <div class="stat-cards">
+      <div class="stat-card"><div class="sv">${total}</div><div class="sl">סה"כ השאלות</div></div>
+      <div class="stat-card"><div class="sv">${active}</div><div class="sl">השאלות פעילות כרגע</div></div>
+      <div class="stat-card"><div class="sv">${returned}</div><div class="sl">הוחזרו</div></div>
+      <div class="stat-card"><div class="sv">${avgDuration!==null?avgDuration.toFixed(1):'—'}</div><div class="sl">ימי השאלה בממוצע${avgDuration===null?' (אין עדיין נתונים)':''}</div></div>
+    </div>
+    <div class="asec">
+      <h3>&#128200; השאלות לפי חודש (6 חודשים אחרונים)</h3>
+      <div class="trend-chart">
+        ${months.map(m=>`
+          <div class="trend-bar">
+            <div class="trend-bar-val">${m.count||''}</div>
+            <div class="trend-bar-fill" style="height:${m.count?Math.max(6,(m.count/monthMax)*100):2}px"></div>
+            <div class="trend-bar-label">${m.label}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="asec">
+      <h3>&#127922; השאלות לפי קטגוריה</h3>
+      ${catEntries.map(([cat,count])=>`
+        <div class="bar-row">
+          <div class="bar-label">${esc(cat)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(count/catMax)*100}%"></div></div>
+          <div class="bar-val">${count}</div>
+        </div>`).join('')}
+    </div>
+    <div class="asec">
+      <h3>&#11088; הפריטים הכי מבוקשים</h3>
+      ${itemEntries.map(([name,count])=>`
+        <div class="bar-row">
+          <div class="bar-label">${esc(name)}</div>
+          <div class="bar-track"><div class="bar-fill lav" style="width:${(count/itemMax)*100}%"></div></div>
+          <div class="bar-val">${count}</div>
+        </div>`).join('')}
+    </div>`;
 }
 
 // ── EDIT MODAL ──
@@ -1121,11 +1317,12 @@ document.getElementById('btn-enable-notif')?.addEventListener('click',async()=>{
     alert('לא אושרו התראות. נסה להפעיל ידנית בהגדרות הדפדפן');
   }
 });
-document.getElementById('btn-logout')?.addEventListener('click',()=>{stopPolling();document.getElementById('admin-login').classList.remove('hidden');document.getElementById('admin-panel').classList.add('hidden');document.getElementById('admin-pass-input').value='';showPage('home');});
+document.getElementById('btn-logout')?.addEventListener('click',()=>{signOut(auth).catch(()=>{});stopPolling();document.getElementById('admin-login').classList.remove('hidden');document.getElementById('admin-panel').classList.add('hidden');document.getElementById('admin-pass-input').value='';showPage('home');});
 document.getElementById('tab-notif')?.addEventListener('click',()=>setAdminTab('notif'));
 document.getElementById('btn-clear-all-notif')?.addEventListener('click',clearAllNotifications);
 document.getElementById('tab-loans')?.addEventListener('click',()=>setAdminTab('loans'));
 document.getElementById('tab-items')?.addEventListener('click',()=>setAdminTab('items'));
+document.getElementById('tab-stats')?.addEventListener('click',()=>setAdminTab('stats'));
 
 document.getElementById('btn-submit-borrow')?.addEventListener('click',submitBorrow);
 document.getElementById('borrow-search')?.addEventListener('input',e=>renderBorrowGrid(e.target.value));
