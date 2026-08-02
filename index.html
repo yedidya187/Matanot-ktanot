@@ -450,7 +450,6 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
         <h1 style="font-size:1.5rem;color:var(--teal-dark);font-weight:700">לוח ניהול</h1>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          <button style="background:none;border:1px solid var(--teal-mid);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--teal-dark);font-family:'SiteFont','Heebo',sans-serif;font-size:.78rem" id="btn-fix-cats">תקן קטגוריות</button>
           <button style="background:none;border:1px solid var(--lav);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--lav);font-family:'SiteFont','Heebo',sans-serif;font-size:.78rem" id="btn-enable-notif">🔔 אפשר התראות</button>
           <button style="background:none;border:1px solid var(--border);padding:.38rem .95rem;border-radius:.45rem;cursor:pointer;color:var(--text-mid);font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem" id="btn-logout">התנתקות</button>
         </div>
@@ -1260,30 +1259,6 @@ async function saveEdit(){
 }
 
 
-async function fixCategories(){
-  const catMap={
-    '?? פותחים קופסא':'פותחים קופסא',
-    '?? בין השורות':'בין השורות',
-    '?? דייט על קלף':'דייט על קלף',
-    '✨ המיוחדים שלנו':'המיוחדים שלנו'
-  };
-  let fixed=0;
-  for(const item of items){
-    const clean=catMap[item.cat];
-    if(clean){
-      await updateDoc(doc(db,'items',item.id),{cat:clean});
-      fixed++;
-    }
-  }
-  if(fixed>0){
-    alert('תוקן! '+fixed+' פריטים עודכנו');
-    await loadItems();
-    renderGrid();
-    renderAdminItems();
-  } else {
-    alert('אין פריטים לתיקון');
-  }
-}
 // ── EVENT LISTENERS ──
 document.getElementById('nav-home-brand')?.addEventListener('click',e=>{e.preventDefault();showPage('home');window.scrollTo({top:0,behavior:'smooth'});});
 
@@ -1300,7 +1275,6 @@ document.getElementById('btn-admin')?.addEventListener('click',()=>showPage('adm
 document.getElementById('btn-admin-about')?.addEventListener('click',()=>showPage('admin'));
 document.getElementById('btn-login')?.addEventListener('click',tryLogin);
 document.getElementById('admin-pass-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
-document.getElementById('btn-fix-cats')?.addEventListener('click',fixCategories);
 document.getElementById('btn-enable-notif')?.addEventListener('click',async()=>{
   if(!('Notification' in window)){alert('הדפדפן לא תומך בהתראות');return;}
   const p=await Notification.requestPermission();
