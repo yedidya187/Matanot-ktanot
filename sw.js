@@ -1,4 +1,4 @@
-const CACHE_NAME = 'matanot-ktanot-v1';
+const CACHE_NAME = 'matanot-ktanot-v2';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
