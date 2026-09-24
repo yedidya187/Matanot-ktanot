@@ -1,0 +1,150 @@
+// ⚠️ לפני שמדביקים את זה בקונסולה (Firebase Console → Firestore → Rules):
+// השוו קודם מול מה שכתוב שם עכשיו בפועל. הקובץ הזה נכתב מתוך קריאת הקוד
+// (app.js/index.html) בלבד - אין לי גישה ישירה לקונסולה, ואם יש שם קולקציה
+// או כלל נוסף שאינו ידוע לי (items/loans/messages/reviews), ההחלפה המלאה
+// תמחק אותו. אם הכל תואם למה שאתם רואים בקונסולה - אפשר להדביק את כל
+// הקובץ במקום הקיים.
+//
+// זה קובץ ה-YAML/היעד הסופי לרגע ש-v2 עולה באוויר במלואו. אל תדביקו את כל
+// הקובץ הזה לפני כן - הכללים משותפים לכל הפרויקט ב-Firebase, כלומר גם
+// לאתר החי שרץ כרגע מ-main, ו-main עדיין מצפה לכללים הישנים (בעיקר: read
+// פומבי על loans - סגירת זה מוקדם מדי תשבור את הצגת הזמינות ב-main).
+//
+// בשלב הביניים (בדיקות v2 מול main עדיין חי) הדבקנו בקונסולה רק את כלל
+// ה-items החדש, עם loans/create/messages/reviews נשארים בדיוק כפי שהיו -
+// ראו את הטקסט המדויק לכך בשיחה, לא בקובץ הזה.
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── ITEMS (קטלוג) ──
+    match /items/{itemId} {
+      // read: פומבי לגמרי, כל שדה - הקטלוג חייב להיות גלוי לכל מבקר.
+      // חושף: שם, תיאור, תמונה, קטגוריה, זמינות, מוני צפיות/השאלות - שום
+      // מידע אישי על אף אחד, זה בסדר שיהיה פומבי.
+      allow read: if true;
+
+      // מנהל מחובר: הרשאה מלאה (הוספה/עריכה/מחיקה מפאנל הניהול).
+      allow create, delete: if request.auth != null;
+
+      // עדכון: למנהל - הכל מותר. לגולש לא מחובר - מותר לגעת אך ורק
+      // בשלושת השדות הבאים, ורק בצורה שלא ניתנת לניצול:
+      //   - views / borrows: מותר להעלות ב-1 בדיוק בכל כתיבה (לא לקפוץ
+      //     למספר שרירותי, לא להוריד). נכתב תמיד עם increment(1) בקוד, כך
+      //     שהערך הסופי שהחוק בודק הוא כבר אחרי הפעלת ה-increment בשרת.
+      //   - available: מותר להפוך ל-true/false (טרנזקציית ההשאלה/החזרה).
+      // חושף: שום דבר חדש (אלה כבר שדות פומביים לקריאה ממילא).
+      // חוסם: שינוי name/desc/cat/img/kitWe/kitYou בלי להיות מחובר, וקפיצה
+      // שרירותית של המונים (לא ניתן "לתקוע" views על מספר ענק בבת אחת).
+      allow update: if request.auth != null || (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views','borrows','available']) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['views']) ||
+          request.resource.data.views == resource.data.get('views', 0) + 1) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['borrows']) ||
+          request.resource.data.borrows == resource.data.get('borrows', 0) + 1) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['available']) ||
+          request.resource.data.available is bool)
+      );
+    }
+
+    // ── LOANS (סגור לקריאה ציבורית - ראו report.md, שלב א') ──
+    match /loans/{loanId} {
+      // read: רק מנהל מחובר. גולש רגיל לא קורא את הקולקציה הזו בכלל יותר -
+      // לא dump מלא, לא שאילתה חלקית. שם+טלפון של שואלים כבר לא חשופים
+      // לאף אחד חוץ מהמנהל.
+      allow read: if request.auth != null;
+
+      // מחיקה: מנהל בלבד (ניקוי היסטוריה מפאנל הניהול).
+      allow delete: if request.auth != null;
+
+      // יצירה: מנהל - חופשי (השאלה ידנית). גולש לא מחובר - מותר, אבל רק
+      // במבנה מסמך קשיח שמונע הזרקת שדות/ערכים לא צפויים (למשל status
+      // שמתחיל כבר כ"הוחזר", או seen:true שמסתיר את ההתראה מהמנהל).
+      // חושף: שום קריאה כאן, רק כתיבה חד-כיוונית של המבקר לגבי עצמו.
+      // חוסם: כל שדה שלא ברשימה, וכל ערך שלא עומד בתנאים (למשל name/phone
+      // ריקים או ענקיים - הצפה/spam).
+      allow create: if request.auth != null || (
+        request.resource.data.keys().hasOnly(['itemId','item','name','phone','date','timestamp','status','seen','returnToken']) &&
+        request.resource.data.itemId is string &&
+        request.resource.data.item is string && request.resource.data.item.size() > 0 && request.resource.data.item.size() <= 200 &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() > 0 && request.resource.data.phone.size() <= 30 &&
+        request.resource.data.date is string && request.resource.data.date.size() <= 30 &&
+        request.resource.data.timestamp is string && request.resource.data.timestamp.size() <= 40 &&
+        request.resource.data.status == 'פעיל' &&
+        request.resource.data.seen == false &&
+        request.resource.data.returnToken is string && request.resource.data.returnToken.size() >= 20
+      );
+
+      // עדכון: מנהל - חופשי. גולש לא מחובר - רק "החזרה עצמית" של ההשאלה
+      // *שלו*, מוכחת ע"י אותו returnToken אקראי שנוצר בדפדפן שלו בזמן
+      // ההשאלה (אף פעם לא נקרא בחזרה מ-Firestore - הדפדפן כבר מכיר אותו
+      // מ-localStorage). אפשר לזוז רק פעיל→הוחזר, אף פעם לא הפוך, ואף פעם
+      // לא על שדות אחרים - כולל seen, שמותר לכתוב רק כ-false (מסמן את
+      // ההחזרה כאירוע חדש להתראת המנהל, בדיוק כמו השאלה חדשה - אף פעם לא
+      // true, שזה היה "מטשטש" את ההתראה בעצמו).
+      // חושף: שום דבר - אין read בכלל בנתיב הזה, רק כתיבה שמצליחה/נכשלת.
+      // חוסם: שינוי status/returnedTimestamp על השאלה של מישהו אחר (בלי
+      // לדעת את ה-token שלו זה בלתי אפשרי לנחש - 128 סיביות אקראיות),
+      // ושינוי כל שדה אחר (name/phone/item/itemId/date/timestamp), וסימון
+      // seen=true על ידי מי שלא המנהל.
+      allow update: if request.auth != null || (
+        resource.data.status == 'פעיל' &&
+        request.resource.data.status == 'הוחזר' &&
+        request.resource.data.returnToken == resource.data.returnToken &&
+        request.resource.data.seen == false &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','returnedTimestamp','returnToken','seen'])
+      );
+    }
+
+    // ── MESSAGES (תיבת "השאר הודעה למנהלים" בעמוד ההחזרה) ──
+    match /messages/{messageId} {
+      // read/update/delete: מנהל בלבד - זו תיבת דואר נכנס לניהול, לא תוכן
+      // ציבורי. אף גולש לא צריך/יכול לקרוא הודעות (גם לא את שלו - זו לא
+      // תיבת דו-שיח, רק שליחה חד-כיוונית למנהלים).
+      allow read, update, delete: if request.auth != null;
+
+      // יצירה: פומבי, אבל עם הגבלת אורך קשיחה על כל שדה - זו ההגנה
+      // האמיתית והיחידה שניתן לאכוף כאן נגד הצפה/spam (Firestore rules
+      // לא יכולים לספור "כמה הודעות נשלחו מהמכשיר הזה היום" בלי auth -
+      // ההגבלה הזו קיימת רק בצד הלקוח ב-app.js, ועוקפת ע"י כל מי שינקה
+      // localStorage/יפתח חלון פרטי. אם ספאם אמיתי יהפוך לבעיה, הפתרון
+      // האמיתי הוא App Check ו/או Cloud Function, לא Firestore rules).
+      // חושף: שום קריאה. חוסם: הודעות/שמות/טלפונים ארוכים באופן לא סביר,
+      // ושדות שלא ברשימה (כולל ניסיון לשלוח seen:true מלכתחילה).
+      allow create: if
+        request.resource.data.keys().hasOnly(['name','phone','message','timestamp','seen']) &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() > 0 && request.resource.data.phone.size() <= 30 &&
+        request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 500 &&
+        request.resource.data.timestamp is string && request.resource.data.timestamp.size() <= 40 &&
+        request.resource.data.seen == false;
+    }
+
+    // ── REVIEWS (משוב כללי ואנונימי, אחרי החזרה עצמית מוצלחת) ──
+    match /reviews/{reviewId} {
+      // read/delete: מנהל בלבד - זה פיד לניהול, לא תוכן ציבורי (אין דף
+      // "מה אומרים עלינו" באתר כרגע). אין update - אין שדה "seen"/סטטוס
+      // לביקורת אנונימית, אין מה לערוך.
+      allow read, delete: if request.auth != null;
+
+      // יצירה: פומבי, בלי שם/טלפון בכלל (אנונימי לגמרי, בכוונה - זה לא
+      // "הודעה למנהלים" עם פרטי קשר, זה משוב כללי). רק טקסט חופשי מוגבל
+      // באורך + חותמת זמן. אין כאן הגבלת קצב אפילו בצד הלקוח (contrast עם
+      // /messages) - זה לא התבקש, ותיבת המשוב מוצגת רק אחרי החזרה מוצלחת,
+      // לא תמיד גלויה כמו תיבת ההודעות, אז הסיכון לספאם נמוך יותר.
+      // חושף: שום קריאה. חוסם: טקסט ארוך באופן לא סביר, ושדות שלא ברשימה
+      // (למשל ניסיון לצרף name/phone/itemId שיהפכו את זה ללא-אנונימי).
+      allow create: if
+        request.resource.data.keys().hasOnly(['message','timestamp']) &&
+        request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 500 &&
+        request.resource.data.timestamp is string && request.resource.data.timestamp.size() <= 40;
+    }
+
+    // ── ברירת מחדל: כל נתיב אחר שלא הוגדר כאן, סגור לגמרי ──
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

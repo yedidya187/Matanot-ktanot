@@ -128,26 +128,41 @@
       <!-- RETURN -->
       <div id="section-return" class="hidden">
         <h2>החזרתי פריט &#9996;</h2>
-        <p class="sub">כתבו את מספר הטלפון שאיתו לקחתם את הפריט</p>
-        <div class="fg">
-          <label>טלפון</label>
-          <input id="r-phone" placeholder="05X-XXXXXXX" type="tel" autocomplete="off"/>
-        </div>
-        <button class="sbtn" id="btn-lookup-return">חיפוש &#128269;</button>
-        <div id="r-loans-list" class="hidden" style="margin-top:1rem">
-          <p style="font-size:.88rem;color:var(--text-mid);margin-bottom:.75rem">בחרו את הפריט שהחזרתם:</p>
-          <div id="r-items"></div>
-        </div>
-        <div id="r-not-found" class="hidden" style="text-align:center;padding:1.5rem;color:var(--text-mid)">
-          <div style="font-size:2rem;margin-bottom:.5rem">&#128269;</div>
-          <p>לא נמצאו השאלות פעילות עם המספר הזה</p>
-        </div>
-        <div id="r-success" class="sbox hidden">
+
+        <div id="r-return-success" class="sbox hidden">
           <div class="si">&#9996;</div>
           <h3>תודה שהחזרתם!</h3>
           <p>הפריט סומן כהוחזר &#128149;</p>
-          <div style="margin-top:1.5rem"><button class="btn-hero" id="btn-back-from-return">חזרה</button></div>
         </div>
+
+        <div id="r-feedback-box" class="hidden" style="margin-bottom:1.5rem">
+          <p class="sub">איך היה? נשמח לביקורת שלכם &#128591;</p>
+          <div class="fg"><textarea id="rv-text" autocomplete="off" rows="2" maxlength="500"></textarea></div>
+          <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+            <button class="sbtn" id="btn-send-review" style="flex:1">שליחה</button>
+            <button id="btn-skip-review" style="background:none;border:1px solid var(--border);border-radius:.5rem;padding:.6rem 1.2rem;cursor:pointer;color:var(--text-mid);font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem">לא הפעם</button>
+          </div>
+        </div>
+
+        <div id="r-my-loans" class="hidden" style="margin-bottom:1.5rem">
+          <p class="sub">ההשאלות הפעילות שסימנתם מהמכשיר הזה:</p>
+          <div id="r-items"></div>
+        </div>
+
+        <div id="r-msg-box">
+          <div class="frow">
+            <div class="fg"><label>שם</label><input id="m-name" placeholder="שם מלא" autocomplete="off" maxlength="100"/></div>
+            <div class="fg"><label>טלפון</label><input id="m-phone" placeholder="05X-XXXXXXX" type="tel" autocomplete="off" maxlength="30"/></div>
+          </div>
+          <div class="fg"><label>איזה פריט? מה קרה?</label><textarea id="m-message" autocomplete="off" rows="2" maxlength="500" style="min-height:auto"></textarea></div>
+          <button class="sbtn" id="btn-send-msg">שליחת הודעה &#9993;</button>
+          <div id="m-success" class="sbox hidden">
+            <div class="si">&#9993;</div>
+            <h3>ההודעה נשלחה!</h3>
+            <p>קיבלנו, תודה &#128149;</p>
+          </div>
+        </div>
+
         <div class="clnk" style="margin-top:1rem"><button id="btn-cancel-return">חזרה</button></div>
       </div>
 
@@ -218,13 +233,13 @@
 <!-- ADMIN -->
 <div id="page-admin" class="hidden">
   <div class="admin-wrap">
-    <div id="admin-login" class="admin-login-box">
+    <form id="admin-login" class="admin-login-box" onsubmit="return false">
       <h2 style="font-size:1.45rem;color:var(--teal-dark);margin-bottom:.4rem">&#128274; כניסה לניהול</h2>
       <p style="color:var(--text-mid);font-size:.88rem;margin-bottom:1.75rem">אזור מנהלים בלבד</p>
-      <div class="fg"><label>סיסמה</label><input type="password" id="admin-pass-input" placeholder="הכנס סיסמה"/></div>
+      <div class="fg"><label>סיסמה</label><input type="password" id="admin-pass-input" placeholder="הכנס סיסמה" autocomplete="current-password"/></div>
       <p id="admin-err" style="color:#B05030;font-size:.83rem;margin-bottom:.7rem;display:none">סיסמה שגויה</p>
-      <button class="btn-hero" style="width:100%" id="btn-login">כניסה</button>
-    </div>
+      <button type="button" class="btn-hero" style="width:100%" id="btn-login">כניסה</button>
+    </form>
     <div id="admin-panel" class="hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
         <h1 style="font-size:1.5rem;color:var(--teal-dark);font-weight:700">לוח ניהול</h1>
@@ -237,6 +252,8 @@
         <button class="atab on" id="tab-notif">&#128149; התראות <span class="notif-badge hidden" id="notif-badge"></span></button>
         <button class="atab" id="tab-loans">&#128203; השאלות</button>
         <button class="atab" id="tab-items">&#127922; פריטים</button>
+        <button class="atab" id="tab-messages">&#9993; הודעות <span class="notif-badge hidden" id="messages-badge"></span></button>
+        <button class="atab" id="tab-reviews">&#127775; ביקורות</button>
         <button class="atab" id="tab-stats">&#128202; דשבורד</button>
       </div>
       <div id="admin-notif">
@@ -260,8 +277,12 @@
       <div id="admin-items" class="hidden">
         <div class="asec" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
           <h3 id="items-title">פריטים (0)</h3>
-          <button class="editbtn" id="btn-new-item" onclick="openEdit('-1')">&#10133; פריט חדש</button>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="editbtn" id="btn-preview-migration" style="border-color:var(--lav);color:var(--lav)" title="חד פעמי: מסמן זמינות לכל הפריטים הקיימים לפי ההשאלות הפעילות">&#128260; מיגרציית זמינות</button>
+            <button class="editbtn" id="btn-new-item" onclick="openEdit('-1')">&#10133; פריט חדש</button>
+          </div>
         </div>
+        <div id="migration-box" class="asec hidden"></div>
         <div class="asec" style="padding:.75rem 1rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
           <input id="admin-search" placeholder="&#128269; חיפוש..." style="flex:1;min-width:140px;padding:.5rem .85rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem;direction:rtl" id="admin-search"/>
           <select id="admin-cat-filter" style="padding:.5rem .85rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem;direction:rtl;background:var(--white)">
@@ -274,6 +295,18 @@
         </div>
         <div class="asec" style="padding:.5rem 0 0;border:none;background:none;margin:0">
           <div id="items-admin-list" class="iadmin"></div>
+        </div>
+      </div>
+      <div id="admin-messages" class="hidden">
+        <div class="asec">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem"><h3 style="margin:0">&#9993; הודעות מגולשים</h3><button id="btn-clear-all-messages" style="background:none;border:1px solid #C87055;color:#C87055;padding:.3rem .8rem;border-radius:.4rem;cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.8rem;font-weight:600">סמן הכל כנקרא</button></div>
+          <div id="messages-list"></div>
+        </div>
+      </div>
+      <div id="admin-reviews" class="hidden">
+        <div class="asec">
+          <h3>&#127775; ביקורות מגולשים</h3>
+          <div id="reviews-list"></div>
         </div>
       </div>
       <div id="admin-stats" class="hidden">
