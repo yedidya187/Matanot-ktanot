@@ -1,6 +1,8 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, runTransaction, increment, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, runTransaction, increment, writeBatch, query, where, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { BRANCH_IDS, CATEGORIES, KIT_CATEGORY, WA_TEXT } from './shared.js';
+import { branchPageHtml } from './branch-page.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyC0ErwzHBOVTsuKp-rdc15lKMoZ70T93Jw",
@@ -50,11 +52,16 @@ function logAndMessage(e, fallback){
 }
 
 
-// Single branch today (מצפה יריחו). When the site splits into several branch
-// pages, this is the one line each branch page needs to change so local
-// "my loans" / message-rate-limit storage never mixes between branches that
-// happen to share the same domain (localStorage is per-origin, not per-page).
-const BRANCH = 'mitzpe';
+// Which branch this page is. Each branch html file sets <body data-branch=...>.
+// Every query, every new document and all per-device local storage is scoped
+// by this value (localStorage is per-origin, so the keys carry the branch).
+const BRANCH = document.body.dataset.branch;
+if (!BRANCH_IDS.includes(BRANCH)) {
+  document.body.textContent = 'הדף לא נמצא';
+  throw new Error('Unknown branch: ' + BRANCH);
+}
+// The page markup is identical for every branch and lives in branch-page.js.
+document.body.insertAdjacentHTML('afterbegin', branchPageHtml());
 const MY_LOANS_KEY = `mtk_myLoans_${BRANCH}`;
 const MSG_RATE_KEY = `mtk_msgRate_${BRANCH}`;
 const MSG_RATE_LIMIT = 10; // max messages per device per day - client-side only, see firestore.rules
@@ -83,15 +90,16 @@ function saveMyLoans(list){
 function addMyLoan(entry){ const list=getMyLoans(); list.push(entry); saveMyLoans(list); }
 function removeMyLoan(loanId){ saveMyLoans(getMyLoans().filter(l=>l.loanId!==loanId)); }
 
-const CAT_ICONS = {'פותחים קופסא':'&#127183;','בין השורות':'&#128214;','דייט על קלף':'&#128149;','המיוחדים שלנו':'&#127873;'};
-const PLACEHOLDERS = {'פותחים קופסא':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI2MCIgZmlsbD0iI0VBRjVGMCIgcng9IjEyIi8+PHRleHQgeD0iMjAwIiB5PSIxNTAiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfg48</text></svg>','בין השורות':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI2MCIgZmlsbD0iI0VBRjVGMCIgcng9IjEyIi8+PHRleHQgeD0iMjAwIiB5PSIxNTAiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfkJY8L3RleHQ+PC9zdmc+','דייט על קלף':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI2MCIgZmlsbD0iI0VBRjVGMCIgcng9IjEyIi8+PHRleHQgeD0iMjAwIiB5PSIxNTAiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfmIk8L3RleHQ+PC9zdmc+','המיוחדים שלנו':'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iMjYwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjI2MCIgZmlsbD0iI0VBRjVGMCIgcng9IjEyIi8+PHRleHQgeD0iMjAwIiB5PSIxNTAiIGZvbnQtc2l6ZT0iNzIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPvCfmrs8L3RleHQ+PC9zdmc+'};
+const CAT_ICONS = Object.fromEntries(CATEGORIES.map(c => [c.name, c.icon]));
+const PLACEHOLDERS = Object.fromEntries(CATEGORIES.map(c => [c.name, c.placeholder]));
+const CAT_NAMES = CATEGORIES.map(c => c.name);
 
 let items=[], loans=[], messages=[], reviews=[], selectedItem=null, catFilter='הכל', editId=null, editImgData='', modalItem=null;
 let loanSort={col:'date',dir:'desc'};
 
 // ── LOAD DATA ──
 async function loadItems(){
-  const snap = await getDocs(collection(db,'items'));
+  const snap = await getDocs(query(collection(db,'items'),where('branch','==',BRANCH)));
   // First: load without images for fast render
   items = snap.docs.map(d=>{
     const data=d.data();
@@ -109,7 +117,7 @@ let allItemsLoaded=false;
 async function loadItemsPage(reset=false){
   if(reset){allItemsLoaded=false;cachedSample=[];}
   if(allItemsLoaded)return;
-  const cats=['פותחים קופסא','בין השורות','דייט על קלף','המיוחדים שלנו'];
+  const cats=CAT_NAMES;
   const shownIds=new Set(cachedSample.map(i=>i.id));
   const newItems=[];
   for(const cat of cats){
@@ -128,17 +136,17 @@ async function loadItemsPage(reset=false){
 // Admin-only from here on: loans read is closed to the public (see
 // firestore.rules) - this only succeeds once an admin is signed in.
 async function loadLoans(){
-  const snap = await getDocs(collection(db,'loans'));
+  const snap = await getDocs(query(collection(db,'loans'),where('branch','==',BRANCH)));
   loans = snap.docs.map(d=>{const data=d.data();return {id:d.id,...data};});
 }
 // Admin-only too - the new "messages" collection (see firestore.rules).
 async function loadMessages(){
-  const snap = await getDocs(collection(db,'messages'));
+  const snap = await getDocs(query(collection(db,'messages'),where('branch','==',BRANCH)));
   messages = snap.docs.map(d=>({id:d.id,...d.data()}));
 }
 // Admin-only too - the new "reviews" collection (see firestore.rules).
 async function loadReviews(){
-  const snap = await getDocs(collection(db,'reviews'));
+  const snap = await getDocs(query(collection(db,'reviews'),where('branch','==',BRANCH)));
   reviews = snap.docs.map(d=>({id:d.id,...d.data()}));
 }
 
@@ -158,22 +166,21 @@ function showPage(p){
   const nb=document.getElementById('nav-'+p);if(nb)nb.classList.add('on');
   // Track page view in Analytics
   const pageNames={'home':'דף ראשי','about':'אודות','admin':'ניהול'};
-  if(typeof gtag!=='undefined') gtag('event','page_view',{page_title:pageNames[p]||p,page_location:window.location.href+'#'+p});
+  if(typeof gtag!=='undefined') gtag('event','page_view',{page_title:pageNames[p]||p,page_location:window.location.href+'#'+p,branch:BRANCH});
 }
 
 // ── FILTERS ──
 function setFilter(val){
   catFilter=cleanCat(val)||val;
   currentPage=1;cachedSample=[];
-  document.querySelectorAll('.fb-cat').forEach(b=>b.classList.remove('on'));
-  document.getElementById('filter-'+(val==='הכל'?'all':val==='פותחים קופסא'?'cat1':val==='בין השורות'?'cat2':val==='דייט על קלף'?'cat3':'cat4')).classList.add('on');
+  document.querySelectorAll('.fb-cat').forEach(b=>b.classList.toggle('on',b.dataset.cat===val));
   renderGrid();
 }
 
 // ── GRID ──
 function getSmartSample(items){
   // First 8: 2 from each category, then rest randomly
-  const cats=['פותחים קופסא','בין השורות','דייט על קלף','המיוחדים שלנו'];
+  const cats=CAT_NAMES;
   const first=[];
   const rest=[];
   cats.forEach(cat=>{
@@ -196,7 +203,7 @@ function renderGrid(){
   let pool;
   if(catFilter==='הכל'){
     // Smart order: ensure all categories represented
-    const cats=['פותחים קופסא','בין השורות','דייט על קלף','המיוחדים שלנו'];
+    const cats=CAT_NAMES;
     if(cachedSample.length===0){
       const first=[];
       cats.forEach(cat=>{
@@ -264,7 +271,7 @@ function openModal(id){
   document.getElementById('modal-desc').textContent=item.desc||'';
   const ks=document.getElementById('modal-kit-sections');
   ks.innerHTML='';
-  if(item.cat==='המיוחדים שלנו'){
+  if(item.cat===KIT_CATEGORY){
     if(item.kitWe) ks.innerHTML+=`<div class="kit-section"><h4>&#9989; אנחנו כבר דאגנו ל...</h4><p style="white-space:pre-line">${esc(item.kitWe)}</p></div>`;
     if(item.kitYou) ks.innerHTML+=`<div class="kit-section orange"><h4>&#127968; עוד קצת השקעה מהבית</h4><p style="white-space:pre-line">${esc(item.kitYou)}</p></div>`;
   }
@@ -282,7 +289,7 @@ function openModal(id){
 
 // ── BORROW ──
 function showSection(sec){
-  if(sec&&typeof gtag!=='undefined') gtag('event',sec==='borrow'?'borrow_start':'return_start');
+  if(sec&&typeof gtag!=='undefined') gtag('event',sec==='borrow'?'borrow_start':'return_start',{branch:BRANCH});
   document.getElementById('section-borrow').classList.toggle('hidden',sec!=='borrow');
   document.getElementById('section-return').classList.toggle('hidden',sec!=='return');
   document.getElementById('action-sec').scrollIntoView({behavior:'smooth'});
@@ -361,7 +368,7 @@ async function submitBorrow(){
   const itemRef=doc(db,'items',selectedItem.id);
   const loanRef=doc(collection(db,'loans'));
   const returnToken=genToken();
-  const loanData={itemId:selectedItem.id,item:selectedItem.name,name,phone,date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:false,returnToken};
+  const loanData={itemId:selectedItem.id,item:selectedItem.name,name,phone,date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:false,returnToken,branch:BRANCH};
   try{
     await runTransaction(db, async(tx)=>{
       const snap=await tx.get(itemRef);
@@ -487,7 +494,7 @@ async function sendMessage(){
   const btn=document.getElementById('btn-send-msg');
   btn.disabled=true;btn.textContent='שולח...';
   try{
-    await addDoc(collection(db,'messages'),{name,phone,message,timestamp:new Date().toISOString(),seen:false});
+    await addDoc(collection(db,'messages'),{name,phone,message,timestamp:new Date().toISOString(),seen:false,branch:BRANCH});
     recordMsgSent();
     document.getElementById('m-name').value='';
     document.getElementById('m-phone').value='';
@@ -522,7 +529,7 @@ async function sendReview(){
   const btn=document.getElementById('btn-send-review');
   btn.disabled=true;btn.textContent='שולח...';
   try{
-    await addDoc(collection(db,'reviews'),{message,timestamp:new Date().toISOString(),seen:false});
+    await addDoc(collection(db,'reviews'),{message,timestamp:new Date().toISOString(),seen:false,branch:BRANCH});
     document.getElementById('r-feedback-box').classList.add('hidden');
   }catch(e){
     alert(logAndMessage(e,'שגיאה בשליחת הביקורת. נסו שוב בעוד רגע.'));
@@ -556,6 +563,10 @@ async function tryLogin(){
       });
     }
     if(Notification&&Notification.permission==='default')Notification.requestPermission();
+    if(!document.querySelector('link[rel=manifest]')){
+      // Install-as-app is for admins only: public pages carry no manifest.
+      const m=document.createElement('link');m.rel='manifest';m.href='manifest-'+BRANCH+'.json';document.head.appendChild(m);
+    }
     startPolling();
     Promise.all([loadLoans(), loadItems(), loadMessages(), loadReviews()]).then(()=>{
       // Start the push counters from what's already on screen, so the first
@@ -888,7 +899,7 @@ function renderAdminItems(){
     const name=prompt('שם מי שלקח:');
     if(!name)return;
     try{
-      const loanData={itemId:item.id,item:item.name,name,phone:'מנהל',date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:true,manual:true};
+      const loanData={itemId:item.id,item:item.name,name,phone:'מנהל',date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:true,manual:true,branch:BRANCH};
       const loanRef=doc(collection(db,'loans'));
       const batch=writeBatch(db);
       batch.set(loanRef,loanData);
@@ -938,6 +949,81 @@ async function runAvailabilityMigration(){
     renderAdminItems();renderGrid();
   }catch(e){
     alert(logAndMessage(e,'שגיאה בהרצת המיגרציה (אם זה כשל של הבאטש כולו, שום דבר לא נכתב). נסה שוב.'));
+  }
+}
+
+// ── BRANCH SETTINGS ──
+// Live values: the Firestore record branches/<id>, one per branch. BRANCH_SEED
+// (shared.js) holds the same fields as built-in defaults: it is what the
+// records are created from (admin button below) and the fallback if a record
+// can't be read.
+let branchSettings={};
+const loadSeed=async()=>(await import('./branch-seed.js')).BRANCH_SEED;
+const toIntlPhone=p=>'972'+String(p||'').replace(/\D/g,'').replace(/^0/,'');
+async function loadBranchSettings(){
+  try{
+    const snap=await getDoc(doc(db,'branches',BRANCH));
+    if(snap.exists())branchSettings=snap.data();
+    else branchSettings=(await loadSeed())[BRANCH];
+  }catch(e){
+    console.warn('branch settings could not be read - using built-in defaults',e);
+    branchSettings=(await loadSeed())[BRANCH];
+  }
+  applyBranchSettings();
+}
+function applyBranchSettings(){
+  const s=branchSettings;
+  const wa=s.whatsapp||toIntlPhone(s.phone);
+  document.querySelectorAll('[data-wa]').forEach(a=>{a.href=`https://wa.me/${wa}?text=${encodeURIComponent(WA_TEXT)}`;a.target='_blank';});
+  document.querySelectorAll('[data-donate]').forEach(a=>{a.href=s.donationUrl;a.target='_blank';});
+  const waze=`https://waze.com/ul?q=${encodeURIComponent(s.wazeAddress||s.address)}&navigate=yes`;
+  const where=(s.pickupNote?esc(s.pickupNote)+', ':'')+esc(s.address);
+  document.getElementById('how-location').innerHTML=
+    `פריטי הגמ"ח נמצאים ${where}.<br/>`+
+    `<a class="wa-link" href="${waze}" target="_blank" rel="noopener">&#129517; ניווט בוויז</a>`+
+    (s.phone?` <a class="wa-link" href="tel:${esc(s.phone)}">&#128222; ${esc(s.phone)}</a>`:'');
+  document.getElementById('success-location').innerHTML=`${where}.`;
+}
+
+// One-time admin tool: creates the branches/<id> records from BRANCH_SEED.
+// Preview first, write only after a second confirmation, and never overwrite
+// a record that already exists (so later edits are safe). Delete this section
+// and its button once the records exist.
+let branchSeedPlan=null;
+async function previewBranchSeed(){
+  const box=document.getElementById('branch-seed-box');
+  box.classList.remove('hidden');
+  box.textContent='בודק אילו רשומות כבר קיימות...';
+  try{
+    const BRANCH_SEED=await loadSeed();
+    const existing={};
+    for(const id of BRANCH_IDS)existing[id]=(await getDoc(doc(db,'branches',id))).exists();
+    branchSeedPlan=BRANCH_IDS.filter(id=>!existing[id]);
+    box.innerHTML=`
+      <p style="font-weight:700;margin-bottom:.5rem">הגדרות סניפים:</p>
+      <ul style="margin:0 0 1rem 1rem;padding:0 1rem 0 0">
+        ${BRANCH_IDS.map(id=>`<li><strong>${esc(id)}</strong> - ${esc(BRANCH_SEED[id].address)}, ${esc(BRANCH_SEED[id].phone)} - ${existing[id]?'כבר קיימת (לא תשתנה)':'<strong>תיווצר</strong>'}</li>`).join('')}
+      </ul>
+      ${branchSeedPlan.length?`<button class="sbtn" id="btn-confirm-branch-seed">אשר וצור ${branchSeedPlan.length} רשומות</button>`:'<p style="color:var(--text-mid)">כל הרשומות כבר קיימות - אין מה ליצור.</p>'}`;
+    document.getElementById('btn-confirm-branch-seed')?.addEventListener('click',runBranchSeed);
+  }catch(e){
+    box.classList.add('hidden');
+    alert(logAndMessage(e,'שגיאה בבדיקת הגדרות הסניפים. נסה שוב.'));
+  }
+}
+async function runBranchSeed(){
+  if(!branchSeedPlan||!branchSeedPlan.length)return;
+  if(!confirm(`ליצור ${branchSeedPlan.length} רשומות הגדרות סניף עכשיו?`))return;
+  const box=document.getElementById('branch-seed-box');
+  try{
+    const BRANCH_SEED=await loadSeed();
+    const batch=writeBatch(db);
+    branchSeedPlan.forEach(id=>batch.set(doc(db,'branches',id),BRANCH_SEED[id]));
+    await batch.commit();
+    box.innerHTML=`<p>&#9989; נוצרו ${branchSeedPlan.length} רשומות.</p>`;
+    branchSeedPlan=null;
+  }catch(e){
+    alert(logAndMessage(e,'שגיאה ביצירת הגדרות הסניפים. נסה שוב.'));
   }
 }
 
@@ -1031,7 +1117,7 @@ function renderStats(){
 // ── EDIT MODAL ──
 window.openEdit=function openEdit(id){
   const isNew=id==='-1';
-  const item=isNew?{id:'-1',name:'',cat:'פותחים קופסא',desc:'',img:'',kitWe:'',kitYou:''}:items.find(i=>i.id===id);
+  const item=isNew?{id:'-1',name:'',cat:CAT_NAMES[0],desc:'',img:'',kitWe:'',kitYou:''}:items.find(i=>i.id===id);
   if(!item)return;
   editId=id; editImgData=item.img||'';
   document.getElementById('edit-title').textContent=isNew?'הוספת פריט חדש':'עריכת פריט';
@@ -1039,11 +1125,11 @@ window.openEdit=function openEdit(id){
   saveBtn.disabled=false;
   saveBtn.textContent=isNew?'הוסף לקטלוג +':'שמירה ✓';
   document.getElementById('edit-name').value=item.name||'';
-  document.getElementById('edit-cat').value=item.cat||'פותחים קופסא';
+  document.getElementById('edit-cat').value=item.cat||CAT_NAMES[0];
   document.getElementById('edit-desc').value=item.desc||'';
   document.getElementById('edit-kitwe').value=item.kitWe||'';
   document.getElementById('edit-kityou').value=item.kitYou||'';
-  document.getElementById('edit-kit-fields').classList.toggle('hidden',item.cat!=='המיוחדים שלנו');
+  document.getElementById('edit-kit-fields').classList.toggle('hidden',item.cat!==KIT_CATEGORY);
   refreshEditImg();
   document.getElementById('edit-overlay').classList.remove('hidden');
   document.body.style.overflow='hidden';
@@ -1070,8 +1156,8 @@ async function saveEdit(){
     const data={name,cat,desc:document.getElementById('edit-desc').value,img:editImgData,kitWe:document.getElementById('edit-kitwe').value,kitYou:document.getElementById('edit-kityou').value};
     if(editId==='-1'){
       // New item starts available - no active loan can exist for it yet.
-      const ref=await addDoc(collection(db,'items'),{...data,available:true});
-      items.push({id:ref.id,...data,available:true});
+      const ref=await addDoc(collection(db,'items'),{...data,available:true,branch:BRANCH});
+      items.push({id:ref.id,...data,available:true,branch:BRANCH});
     }else{
       // Deliberately NOT touching `available`/`views`/`borrows` here - editing
       // name/description etc. must never reset an item's live availability.
@@ -1129,6 +1215,7 @@ document.getElementById('tab-messages')?.addEventListener('click',()=>setAdminTa
 document.getElementById('btn-clear-all-messages')?.addEventListener('click',clearAllMessages);
 document.getElementById('tab-reviews')?.addEventListener('click',()=>setAdminTab('reviews'));
 document.getElementById('btn-preview-migration')?.addEventListener('click',previewAvailabilityMigration);
+document.getElementById('btn-seed-branches')?.addEventListener('click',previewBranchSeed);
 
 document.getElementById('btn-submit-borrow')?.addEventListener('click',submitBorrow);
 document.getElementById('borrow-search')?.addEventListener('input',e=>renderBorrowGrid(e.target.value));
@@ -1180,11 +1267,10 @@ document.getElementById('edit-file-input')?.addEventListener('change',e=>{
 });
 document.getElementById('btn-url-img')?.addEventListener('click',()=>{const u=prompt('הדבק קישור URL לתמונה:');if(u){editImgData=u;refreshEditImg();}});
 document.getElementById('btn-clear-img')?.addEventListener('click',()=>{editImgData='';refreshEditImg();});
-document.getElementById('edit-cat')?.addEventListener('change',()=>{document.getElementById('edit-kit-fields').classList.toggle('hidden',document.getElementById('edit-cat').value!=='המיוחדים שלנו');});
+document.getElementById('edit-cat')?.addEventListener('change',()=>{document.getElementById('edit-kit-fields').classList.toggle('hidden',document.getElementById('edit-cat').value!==KIT_CATEGORY);});
 document.querySelectorAll('#filters .fb-cat').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    const map={'filter-all':'הכל','filter-cat1':'פותחים קופסא','filter-cat2':'בין השורות','filter-cat3':'דייט על קלף','filter-cat4':'המיוחדים שלנו'};
-    setFilter(map[btn.id]||'הכל');
+    setFilter(btn.dataset.cat||'הכל');
   });
 });
 
@@ -1194,7 +1280,7 @@ async function init(){
   try{
     // Public visitors never load `loans` at all anymore (see report.md) -
     // loans is only fetched after admin login, in tryLogin().
-    await loadItems();
+    await Promise.all([loadBranchSettings(), loadItems()]);
   }catch(e){
     document.getElementById('items-grid').innerHTML='<div class="empty"><div class="ei">&#9888;</div>שגיאה בטעינה. רענן את הדף.</div>';
     console.error(e);

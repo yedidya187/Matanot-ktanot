@@ -37,6 +37,11 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .hero p strong{color:var(--teal-dark);font-weight:700}
 .btn-hero{display:inline-block;background:var(--teal);color:#fff;border:none;padding:.82rem 2.2rem;border-radius:.6rem;font-family:'SiteFont','Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:all .22s;box-shadow:0 4px 18px rgba(74,158,126,.33)}
 .btn-hero:hover{background:var(--teal-dark);transform:translateY(-2px)}
+a.btn-hero{text-decoration:none}
+.landing{padding-bottom:3.5rem}
+.landing .pick-title{font-size:1.25rem;color:var(--teal-dark);margin:2.2rem 0 1.1rem}
+.branch-picker{display:flex;flex-wrap:wrap;justify-content:center;gap:.9rem}
+.branch-picker .btn-hero{min-width:11rem}
 
 /* HOW IT WORKS */
 .how-sec{background:var(--teal-light);border-top:1px solid var(--teal-mid);border-bottom:1px solid var(--teal-mid);padding:2.5rem 1.5rem}

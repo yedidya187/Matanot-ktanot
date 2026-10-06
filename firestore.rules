@@ -1,18 +1,10 @@
-// ⚠️ לפני שמדביקים את זה בקונסולה (Firebase Console → Firestore → Rules):
-// השוו קודם מול מה שכתוב שם עכשיו בפועל. הקובץ הזה נכתב מתוך קריאת הקוד
-// (app.js/index.html) בלבד - אין לי גישה ישירה לקונסולה, ואם יש שם קולקציה
-// או כלל נוסף שאינו ידוע לי (items/loans/messages/reviews), ההחלפה המלאה
-// תמחק אותו. אם הכל תואם למה שאתם רואים בקונסולה - אפשר להדביק את כל
-// הקובץ במקום הקיים.
+// הכללים המלאים והסופיים של הפרויקט - מדביקים את כל הקובץ בקונסולה
+// (Firebase Console → Firestore → Rules → Publish).
 //
-// זה קובץ ה-YAML/היעד הסופי לרגע ש-v2 עולה באוויר במלואו. אל תדביקו את כל
-// הקובץ הזה לפני כן - הכללים משותפים לכל הפרויקט ב-Firebase, כלומר גם
-// לאתר החי שרץ כרגע מ-main, ו-main עדיין מצפה לכללים הישנים (בעיקר: read
-// פומבי על loans - סגירת זה מוקדם מדי תשבור את הצגת הזמינות ב-main).
-//
-// בשלב הביניים (בדיקות v2 מול main עדיין חי) הדבקנו בקונסולה רק את כלל
-// ה-items החדש, עם loans/create/messages/reviews נשארים בדיוק כפי שהיו -
-// ראו את הטקסט המדויק לכך בשיחה, לא בקובץ הזה.
+// סניפים: ב-create של loans/messages/reviews השדה branch מותר ומאומת מול
+// רשימת הסניפים, אבל עדיין לא חובה (get עם ברירת מחדל) - כדי שהקוד הישן
+// (בלי branch) והחדש (עם branch) יעבדו שניהם מול אותם חוקים בזמן המעבר.
+// אחרי שכל הלקוחות מעודכנים אפשר להחמיר ולדרוש branch.
 
 rules_version = '2';
 service cloud.firestore {
@@ -65,7 +57,8 @@ service cloud.firestore {
       // חוסם: כל שדה שלא ברשימה, וכל ערך שלא עומד בתנאים (למשל name/phone
       // ריקים או ענקיים - הצפה/spam).
       allow create: if request.auth != null || (
-        request.resource.data.keys().hasOnly(['itemId','item','name','phone','date','timestamp','status','seen','returnToken']) &&
+        request.resource.data.keys().hasOnly(['itemId','item','name','phone','date','timestamp','status','seen','returnToken','branch']) &&
+        request.resource.data.get('branch', 'mitzpe') in ['mitzpe','eilat','hafetz-haim'] &&
         request.resource.data.itemId is string &&
         request.resource.data.item is string && request.resource.data.item.size() > 0 && request.resource.data.item.size() <= 200 &&
         request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
@@ -114,7 +107,8 @@ service cloud.firestore {
       // חושף: שום קריאה. חוסם: הודעות/שמות/טלפונים ארוכים באופן לא סביר,
       // ושדות שלא ברשימה (כולל ניסיון לשלוח seen:true מלכתחילה).
       allow create: if
-        request.resource.data.keys().hasOnly(['name','phone','message','timestamp','seen']) &&
+        request.resource.data.keys().hasOnly(['name','phone','message','timestamp','seen','branch']) &&
+        request.resource.data.get('branch', 'mitzpe') in ['mitzpe','eilat','hafetz-haim'] &&
         request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
         request.resource.data.phone is string && request.resource.data.phone.size() > 0 && request.resource.data.phone.size() <= 30 &&
         request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 500 &&
@@ -140,10 +134,21 @@ service cloud.firestore {
       // (למשל ניסיון לצרף name/phone/itemId שיהפכו את זה ללא-אנונימי),
       // וביקורת שנוצרת כבר כ"נקראה" (seen=true) ומסתירה את ההתראה.
       allow create: if
-        request.resource.data.keys().hasOnly(['message','timestamp','seen']) &&
+        request.resource.data.keys().hasOnly(['message','timestamp','seen','branch']) &&
+        request.resource.data.get('branch', 'mitzpe') in ['mitzpe','eilat','hafetz-haim'] &&
         request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 500 &&
         request.resource.data.timestamp is string && request.resource.data.timestamp.size() <= 40 &&
         request.resource.data.seen == false;
+    }
+
+    // ── BRANCHES (הגדרות סניף: כתובת, טלפון, וואטסאפ, תרומה) ──
+    // רשומה לכל סניף, מזהה המסמך = מזהה הסניף (mitzpe / eilat / hafetz-haim).
+    // read: פומבי - זה בדיוק המידע שמוצג בעמוד הסניף לכל גולש (כתובת, טלפון).
+    // write: מנהל בלבד, מפאנל הניהול.
+    // חושף: מה שכבר מוצג באתר. חוסם: כל שינוי של הגדרות בלי להיות מנהל.
+    match /branches/{branchId} {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
 
     // ── ברירת מחדל: כל נתיב אחר שלא הוגדר כאן, סגור לגמרי ──
