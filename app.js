@@ -295,7 +295,9 @@ function showSection(sec){
   if(sec==='return'){
     document.getElementById('r-return-success').classList.add('hidden');
     document.getElementById('r-feedback-box').classList.add('hidden');
+    placeReviewBox(document.getElementById('r-return-success'));
     document.getElementById('rv-text').value='';
+    document.getElementById('m-form').classList.remove('hidden');
     document.getElementById('m-success').classList.add('hidden');
     document.getElementById('m-name').value='';
     document.getElementById('m-phone').value='';
@@ -434,8 +436,7 @@ async function confirmReturn(loanId){
     renderGrid();
     renderMyLoans();
     document.getElementById('r-return-success').classList.remove('hidden');
-    document.getElementById('rv-text').value='';
-    document.getElementById('r-feedback-box').classList.remove('hidden');
+    showReviewBoxAfter(document.getElementById('r-return-success'));
     // Best-effort local notification, mirrors submitBorrow's - only fires
     // if this exact browser happens to have notification permission granted
     // (in practice: an admin testing/returning from their own device). The
@@ -491,7 +492,11 @@ async function sendMessage(){
     document.getElementById('m-name').value='';
     document.getElementById('m-phone').value='';
     document.getElementById('m-message').value='';
+    // The form is replaced (not just followed) by the success message and
+    // the review box, same as after a return through the system.
+    document.getElementById('m-form').classList.add('hidden');
     document.getElementById('m-success').classList.remove('hidden');
+    showReviewBoxAfter(document.getElementById('m-success'));
   }catch(e){
     alert(logAndMessage(e,'שגיאה בשליחת ההודעה. נסו שוב בעוד רגע, ואם זה נמשך פנו למנהל.'));
   }finally{
@@ -499,7 +504,15 @@ async function sendMessage(){
   }
 }
 
-// ── FEEDBACK (general review, shown after a successful self-return) ──
+// ── FEEDBACK (general review, shown after a successful return or message) ──
+// One review box in the DOM, moved to sit right under whichever success
+// message the visitor just got.
+function placeReviewBox(anchor){anchor.after(document.getElementById('r-feedback-box'));}
+function showReviewBoxAfter(anchor){
+  placeReviewBox(anchor);
+  document.getElementById('rv-text').value='';
+  document.getElementById('r-feedback-box').classList.remove('hidden');
+}
 function skipReview(){
   document.getElementById('r-feedback-box').classList.add('hidden');
 }
@@ -509,7 +522,7 @@ async function sendReview(){
   const btn=document.getElementById('btn-send-review');
   btn.disabled=true;btn.textContent='שולח...';
   try{
-    await addDoc(collection(db,'reviews'),{message,timestamp:new Date().toISOString()});
+    await addDoc(collection(db,'reviews'),{message,timestamp:new Date().toISOString(),seen:false});
     document.getElementById('r-feedback-box').classList.add('hidden');
   }catch(e){
     alert(logAndMessage(e,'שגיאה בשליחת הביקורת. נסו שוב בעוד רגע.'));
@@ -544,7 +557,12 @@ async function tryLogin(){
     }
     if(Notification&&Notification.permission==='default')Notification.requestPermission();
     startPolling();
-    Promise.all([loadLoans(), loadItems(), loadMessages(), loadReviews()]).then(()=>{renderAdminLoans();renderNotifications();renderAdminItems();renderAdminMessages();renderAdminReviews();});
+    Promise.all([loadLoans(), loadItems(), loadMessages(), loadReviews()]).then(()=>{
+      // Start the push counters from what's already on screen, so the first
+      // poll doesn't re-announce messages/reviews the admin is looking at.
+      lastMsgCount=unseenMessages().length;lastReviewCount=unseenReviews().length;
+      renderAllAdmin();renderAdminItems();
+    });
     if(Notification&&Notification.permission==='default') Notification.requestPermission();
   }catch(e){
     document.getElementById('admin-err').style.display='block';
@@ -648,67 +666,116 @@ document.querySelectorAll('.lhead [data-sortcol]').forEach(head=>{
 });
 
 // ── ADMIN POLLING ──
-let lastLoanCount=0, pollingInterval=null;
+let lastLoanCount=0, lastMsgCount=0, lastReviewCount=0, pollingInterval=null;
+// Old reviews written before the `seen` field existed have it undefined -
+// only an explicit false counts as a new, unread review.
+const unseenLoans=()=>loans.filter(l=>!l.seen);
+const unseenMessages=()=>messages.filter(m=>!m.seen);
+const unseenReviews=()=>reviews.filter(r=>r.seen===false);
+function renderAllAdmin(){renderNotifications();renderAdminLoans();renderAdminMessages();renderAdminReviews();}
 function startPolling(){
   if(pollingInterval)return;
   pollingInterval=setInterval(async()=>{
-    await loadLoans();
-    // Unseen covers BOTH a new borrow (status='פעיל') and a return (status
-    // ='הוחזר', including self-return) - see the `seen:false` write in
+    try{
+      await Promise.all([loadLoans(),loadMessages(),loadReviews()]);
+    }catch(e){
+      console.warn('admin poll failed',e);
+      return;
+    }
+    // Unseen loans cover BOTH a new borrow (status='פעיל') and a return
+    // (status='הוחזר', including self-return) - see the `seen:false` write in
     // confirmReturn()/submitBorrow().
-    const unseen=loans.filter(l=>!l.seen);
-    if(unseen.length>lastLoanCount){
-      if(Notification&&Notification.permission==='granted'){
+    const unseen=unseenLoans(), newMsgs=unseenMessages(), newReviews=unseenReviews();
+    const canPush=typeof Notification!=='undefined'&&Notification.permission==='granted';
+    if(canPush){
+      if(unseen.length>lastLoanCount){
         unseen.slice(lastLoanCount).forEach(l=>{
           const isReturn=l.status==='הוחזר';
           new Notification(isReturn?'החזרה':'השאלה חדשה',{body:l.name+(isReturn?' החזיר/ה את ':' לקח/ה את ')+l.item});
         });
       }
-      renderNotifications();renderAdminLoans();
+      if(newMsgs.length>lastMsgCount){
+        newMsgs.slice(lastMsgCount).forEach(m=>{
+          new Notification('הודעה חדשה - דורשת טיפול',{body:m.name+': '+(m.message||''),requireInteraction:true});
+        });
+      }
+      if(newReviews.length>lastReviewCount){
+        newReviews.slice(lastReviewCount).forEach(r=>{
+          new Notification('ביקורת חדשה',{body:r.message||''});
+        });
+      }
     }
-    lastLoanCount=unseen.length;
+    lastLoanCount=unseen.length;lastMsgCount=newMsgs.length;lastReviewCount=newReviews.length;
+    renderAllAdmin();
   },30000);
 }
 function stopPolling(){if(pollingInterval){clearInterval(pollingInterval);pollingInterval=null;}}
 async function clearAllNotifications(){
   if(!confirm('למחוק את כל ההתראות?'))return;
   try{
-    const unseen=loans.filter(l=>!l.seen);
     const batch=writeBatch(db);
-    unseen.forEach(l=>batch.update(doc(db,'loans',l.id),{seen:true}));
+    unseenLoans().forEach(l=>batch.update(doc(db,'loans',l.id),{seen:true}));
+    unseenMessages().forEach(m=>batch.update(doc(db,'messages',m.id),{seen:true}));
+    unseenReviews().forEach(r=>batch.update(doc(db,'reviews',r.id),{seen:true}));
     await batch.commit();
     loans=loans.map(l=>({...l,seen:true}));
-    renderNotifications();
+    messages=messages.map(m=>({...m,seen:true}));
+    reviews=reviews.map(r=>r.seen===false?{...r,seen:true}:r);
+    renderAllAdmin();
   }catch(e){
     alert(logAndMessage(e,'שגיאה בעדכון ההתראות. נסה שוב.'));
   }
 }
+async function markSeen(col,id){
+  try{
+    await updateDoc(doc(db,col,id),{seen:true});
+    const mark=arr=>arr.map(x=>x.id===id?{...x,seen:true}:x);
+    if(col==='loans')loans=mark(loans);
+    else if(col==='messages')messages=mark(messages);
+    else reviews=mark(reviews);
+    renderAllAdmin();
+  }catch(e){
+    alert(logAndMessage(e,'שגיאה בסימון ההתראה כנקראה.'));
+  }
+}
+// One list for everything that needs the admin's attention. Messages come
+// first and are visually loud: a message may be a report of a return that
+// needs handling, not just an FYI.
 function renderNotifications(){
-  const unseen=loans.filter(l=>!l.seen);
+  const nMsgs=unseenMessages().sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+  const nLoans=unseenLoans();
+  const nReviews=unseenReviews().sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+  const total=nMsgs.length+nLoans.length+nReviews.length;
   const badge=document.getElementById('notif-badge');
-  if(unseen.length){badge.textContent=unseen.length;badge.classList.remove('hidden');}
+  if(total){badge.textContent=total;badge.classList.remove('hidden');}
   else badge.classList.add('hidden');
   const list=document.getElementById('notif-list');
   if(!list)return;
-  if(!unseen.length){list.innerHTML='<div class="empty" style="padding:1.5rem"><div class="ei">&#128235;</div>אין התראות חדשות</div>';return;}
-  list.innerHTML=unseen.map(l=>{
+  if(!total){list.innerHTML='<div class="empty" style="padding:1.5rem"><div class="ei">&#128235;</div>אין התראות חדשות</div>';return;}
+  const when=ts=>ts?new Date(ts).toLocaleString('he-IL'):'';
+  const msgHtml=nMsgs.map(m=>`
+    <div class="notif-item urgent">
+      <div style="font-size:1.8rem">&#9888;</div>
+      <div class="notif-body"><strong>הודעה חדשה</strong><span class="notif-tag">דורש טיפול</span><br/><strong>${esc(m.name)}</strong> &middot; ${esc(m.phone)}<div style="margin-top:.3rem;white-space:pre-line">${esc(m.message||'')}</div><div class="notif-date">${esc(when(m.timestamp))}</div></div>
+      <button class="notif-seen" data-ncol="messages" data-nid="${m.id}">&#10003;</button>
+    </div>`).join('');
+  const loanHtml=nLoans.map(l=>{
     const isReturn=l.status==='הוחזר';
     return `
     <div class="notif-item">
       <div style="font-size:1.5rem">${isReturn?'&#9996;':'&#128149;'}</div>
       <div class="notif-body"><strong>${esc(l.name)}</strong> ${isReturn?'החזיר/ה את':'לקח/ה את'} <strong>${esc(l.item)}</strong><div class="notif-date">${esc(l.date||'')} &middot; ${esc(l.phone)}</div></div>
-      <button class="notif-seen" data-nid="${l.id}">&#10003;</button>
+      <button class="notif-seen" data-ncol="loans" data-nid="${l.id}">&#10003;</button>
     </div>`;
   }).join('');
-  list.querySelectorAll('[data-nid]').forEach(btn=>btn.addEventListener('click',async()=>{
-    try{
-      await updateDoc(doc(db,'loans',btn.dataset.nid),{seen:true});
-      loans=loans.map(l=>l.id===btn.dataset.nid?{...l,seen:true}:l);
-      renderNotifications();
-    }catch(e){
-      alert(logAndMessage(e,'שגיאה בסימון ההתראה כנקראה.'));
-    }
-  }));
+  const reviewHtml=nReviews.map(r=>`
+    <div class="notif-item">
+      <div style="font-size:1.5rem">&#127775;</div>
+      <div class="notif-body"><strong>ביקורת חדשה</strong><div style="margin-top:.3rem;white-space:pre-line">${esc(r.message||'')}</div><div class="notif-date">${esc(when(r.timestamp))}</div></div>
+      <button class="notif-seen" data-ncol="reviews" data-nid="${r.id}">&#10003;</button>
+    </div>`).join('');
+  list.innerHTML=msgHtml+loanHtml+reviewHtml;
+  list.querySelectorAll('[data-nid]').forEach(btn=>btn.addEventListener('click',()=>markSeen(btn.dataset.ncol,btn.dataset.nid)));
 }
 
 // ── ADMIN MESSAGES ──
@@ -726,15 +793,7 @@ function renderAdminMessages(){
       <div class="notif-body"><strong>${esc(m.name)}</strong> &middot; ${esc(m.phone)}<div class="notif-date">${esc(m.message||'')}</div><div class="notif-date">${esc(m.timestamp?new Date(m.timestamp).toLocaleString('he-IL'):'')}</div></div>
       ${!m.seen?`<button class="notif-seen" data-mid="${m.id}">&#10003;</button>`:''}
     </div>`).join('');
-  list.querySelectorAll('[data-mid]').forEach(btn=>btn.addEventListener('click',async()=>{
-    try{
-      await updateDoc(doc(db,'messages',btn.dataset.mid),{seen:true});
-      messages=messages.map(m=>m.id===btn.dataset.mid?{...m,seen:true}:m);
-      renderAdminMessages();
-    }catch(e){
-      alert(logAndMessage(e,'שגיאה בסימון ההודעה כנקראה.'));
-    }
-  }));
+  list.querySelectorAll('[data-mid]').forEach(btn=>btn.addEventListener('click',()=>markSeen('messages',btn.dataset.mid)));
 }
 async function clearAllMessages(){
   if(!confirm('לסמן את כל ההודעות כנקראו?'))return;
@@ -744,14 +803,17 @@ async function clearAllMessages(){
     unseen.forEach(m=>batch.update(doc(db,'messages',m.id),{seen:true}));
     await batch.commit();
     messages=messages.map(m=>({...m,seen:true}));
-    renderAdminMessages();
+    renderAllAdmin();
   }catch(e){
     alert(logAndMessage(e,'שגיאה בעדכון ההודעות. נסה שוב.'));
   }
 }
 
-// ── ADMIN REVIEWS ── (anonymous, general feedback - no seen/unseen tracking)
+// ── ADMIN REVIEWS ── (anonymous, general feedback)
 function renderAdminReviews(){
+  const badge=document.getElementById('reviews-badge');
+  const unseen=unseenReviews();
+  if(badge){if(unseen.length){badge.textContent=unseen.length;badge.classList.remove('hidden');}else badge.classList.add('hidden');}
   const list=document.getElementById('reviews-list');
   if(!list)return;
   if(!reviews.length){list.innerHTML='<div class="empty"><div class="ei">&#127775;</div>אין ביקורות עדיין</div>';return;}
@@ -760,7 +822,9 @@ function renderAdminReviews(){
     <div class="notif-item">
       <div style="font-size:1.5rem">&#127775;</div>
       <div class="notif-body">${esc(r.message||'')}<div class="notif-date">${esc(r.timestamp?new Date(r.timestamp).toLocaleString('he-IL'):'')}</div></div>
+      ${r.seen===false?`<button class="notif-seen" data-rid="${r.id}">&#10003;</button>`:''}
     </div>`).join('');
+  list.querySelectorAll('[data-rid]').forEach(btn=>btn.addEventListener('click',()=>markSeen('reviews',btn.dataset.rid)));
 }
 
 function renderAdminItems(){

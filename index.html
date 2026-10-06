@@ -150,12 +150,14 @@
         </div>
 
         <div id="r-msg-box">
-          <div class="frow">
-            <div class="fg"><label>שם</label><input id="m-name" placeholder="שם מלא" autocomplete="off" maxlength="100"/></div>
-            <div class="fg"><label>טלפון</label><input id="m-phone" placeholder="05X-XXXXXXX" type="tel" autocomplete="off" maxlength="30"/></div>
+          <div id="m-form">
+            <div class="frow">
+              <div class="fg"><label>שם</label><input id="m-name" placeholder="שם מלא" autocomplete="off" maxlength="100"/></div>
+              <div class="fg"><label>טלפון</label><input id="m-phone" placeholder="05X-XXXXXXX" type="tel" autocomplete="off" maxlength="30"/></div>
+            </div>
+            <div class="fg"><label>פריטים</label><textarea id="m-message" autocomplete="off" rows="2" maxlength="500" style="min-height:auto"></textarea></div>
+            <button class="sbtn" id="btn-send-msg">שליחת הודעה &#9993;</button>
           </div>
-          <div class="fg"><label>איזה פריט? מה קרה?</label><textarea id="m-message" autocomplete="off" rows="2" maxlength="500" style="min-height:auto"></textarea></div>
-          <button class="sbtn" id="btn-send-msg">שליחת הודעה &#9993;</button>
           <div id="m-success" class="sbox hidden">
             <div class="si">&#9993;</div>
             <h3>ההודעה נשלחה!</h3>
@@ -253,7 +255,7 @@
         <button class="atab" id="tab-loans">&#128203; השאלות</button>
         <button class="atab" id="tab-items">&#127922; פריטים</button>
         <button class="atab" id="tab-messages">&#9993; הודעות <span class="notif-badge hidden" id="messages-badge"></span></button>
-        <button class="atab" id="tab-reviews">&#127775; ביקורות</button>
+        <button class="atab" id="tab-reviews">&#127775; ביקורות <span class="notif-badge hidden" id="reviews-badge"></span></button>
         <button class="atab" id="tab-stats">&#128202; דשבורד</button>
       </div>
       <div id="admin-notif">

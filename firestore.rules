@@ -127,19 +127,23 @@ service cloud.firestore {
       // read/delete: מנהל בלבד - זה פיד לניהול, לא תוכן ציבורי (אין דף
       // "מה אומרים עלינו" באתר כרגע). אין update - אין שדה "seen"/סטטוס
       // לביקורת אנונימית, אין מה לערוך.
-      allow read, delete: if request.auth != null;
+      // update: למנהל בלבד - רק כדי לסמן "נקרא" (seen) בהתראות.
+      allow read, update, delete: if request.auth != null;
 
       // יצירה: פומבי, בלי שם/טלפון בכלל (אנונימי לגמרי, בכוונה - זה לא
       // "הודעה למנהלים" עם פרטי קשר, זה משוב כללי). רק טקסט חופשי מוגבל
-      // באורך + חותמת זמן. אין כאן הגבלת קצב אפילו בצד הלקוח (contrast עם
-      // /messages) - זה לא התבקש, ותיבת המשוב מוצגת רק אחרי החזרה מוצלחת,
-      // לא תמיד גלויה כמו תיבת ההודעות, אז הסיכון לספאם נמוך יותר.
+      // באורך + חותמת זמן + seen=false (כדי שתיווצר התראה למנהל, כמו
+      // בהודעות). אין כאן הגבלת קצב אפילו בצד הלקוח (contrast עם
+      // /messages) - זה לא התבקש, ותיבת המשוב מוצגת רק אחרי החזרה/הודעה
+      // מוצלחות, לא תמיד גלויה, אז הסיכון לספאם נמוך יותר.
       // חושף: שום קריאה. חוסם: טקסט ארוך באופן לא סביר, ושדות שלא ברשימה
-      // (למשל ניסיון לצרף name/phone/itemId שיהפכו את זה ללא-אנונימי).
+      // (למשל ניסיון לצרף name/phone/itemId שיהפכו את זה ללא-אנונימי),
+      // וביקורת שנוצרת כבר כ"נקראה" (seen=true) ומסתירה את ההתראה.
       allow create: if
-        request.resource.data.keys().hasOnly(['message','timestamp']) &&
+        request.resource.data.keys().hasOnly(['message','timestamp','seen']) &&
         request.resource.data.message is string && request.resource.data.message.size() > 0 && request.resource.data.message.size() <= 500 &&
-        request.resource.data.timestamp is string && request.resource.data.timestamp.size() <= 40;
+        request.resource.data.timestamp is string && request.resource.data.timestamp.size() <= 40 &&
+        request.resource.data.seen == false;
     }
 
     // ── ברירת מחדל: כל נתיב אחר שלא הוגדר כאן, סגור לגמרי ──

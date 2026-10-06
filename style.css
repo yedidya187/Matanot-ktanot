@@ -199,6 +199,8 @@ body{background:var(--cream);font-family:'SiteFont','Heebo',sans-serif;color:var
 .notif-item{display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;background:var(--teal-light);border:1px solid var(--teal-mid);border-radius:.75rem;margin-bottom:.5rem}
 .notif-body{flex:1;font-size:.88rem;color:var(--text)}
 .notif-date{font-size:.78rem;color:var(--text-light);margin-top:.2rem}
+.notif-item.urgent{background:#FFF1E6;border:2px solid #E8883A}
+.notif-tag{display:inline-block;background:#E8883A;color:#fff;border-radius:.35rem;padding:.05rem .5rem;font-size:.72rem;font-weight:700;margin-inline-start:.4rem}
 .notif-seen{background:var(--teal);color:#fff;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.9rem;flex-shrink:0}
 .notif-badge{background:#E85555;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.7rem;display:inline-flex;align-items:center;justify-content:center;font-weight:700;vertical-align:top;margin-right:2px}
 .empty{text-align:center;padding:2.5rem;color:var(--text-light)}
