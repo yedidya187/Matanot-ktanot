@@ -57,7 +57,7 @@ function logAndMessage(e, fallback){
 const BRANCH = 'mitzpe';
 const MY_LOANS_KEY = `mtk_myLoans_${BRANCH}`;
 const MSG_RATE_KEY = `mtk_msgRate_${BRANCH}`;
-const MSG_RATE_LIMIT = 5; // max messages per device per day - client-side only, see firestore.rules
+const MSG_RATE_LIMIT = 10; // max messages per device per day - client-side only, see firestore.rules
 const MSG_RATE_WINDOW_MS = 24*60*60*1000;
 
 // Random, unguessable per-loan "proof of ownership" token. Generated in the
@@ -483,7 +483,7 @@ async function sendMessage(){
   const message=document.getElementById('m-message').value.trim();
   if(!name||!phone){alert('יש למלא שם וטלפון');return;}
   if(!message){alert('יש לכתוב הודעה');return;}
-  if(!canSendMsg()){alert('נשלחו כבר כמה הודעות מהמכשיר הזה היום. אם זה דחוף, כתבו לנו בוואטסאפ.');return;}
+  if(!canSendMsg()){alert('הגעתם למגבלת ההודעות היומית. אם זה דחוף, כתבו לנו בוואטסאפ.');return;}
   const btn=document.getElementById('btn-send-msg');
   btn.disabled=true;btn.textContent='שולח...';
   try{
