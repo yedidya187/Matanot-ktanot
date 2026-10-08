@@ -225,3 +225,25 @@ a.btn-hero{text-decoration:none}
   .lrow{grid-template-columns:45px 1fr auto}
   .irow{grid-template-columns:36px 1fr auto auto}
 }
+
+.copy-list{max-height:26rem;overflow:auto;border:1px solid var(--border);border-radius:.6rem;background:var(--white)}
+.copy-list:empty{display:none}
+.copy-row{display:flex;align-items:center;gap:.7rem;padding:.45rem .7rem;border-bottom:1px solid var(--border);cursor:pointer}
+.copy-row:last-child{border-bottom:none}
+.copy-row.dup{opacity:.55;cursor:default}
+.copy-row .ccat{color:var(--text-light);font-size:.8rem;margin-inline-start:auto}
+.copy-row .ithumb{width:36px;height:36px;border-radius:.4rem;object-fit:cover;background:var(--teal-light);flex-shrink:0}
+
+/* multi-item borrowing */
+.bbtn-add.on{background:var(--teal-light);color:var(--teal-dark);border:1.5px solid var(--teal-dark)}
+.bbtn-add.on:hover{background:var(--teal-mid)}
+.cat-search{max-width:24rem;margin:0 auto 1rem}
+.cat-search input{width:100%;padding:.5rem 1rem;line-height:1.4;border:1.5px solid var(--border);border-radius:2rem;font-family:'SiteFont','Heebo',sans-serif;font-size:16px;color:var(--text);background:var(--white);outline:none;direction:rtl;-webkit-appearance:none;appearance:none}
+.cat-search input:focus{border-color:var(--teal)}
+.basket-bar{position:fixed;left:0;right:0;bottom:0;z-index:250;background:var(--teal-dark);color:#fff;text-align:center;font-weight:700;font-size:.88rem;line-height:1.2;padding:.6rem 1rem calc(.6rem + env(safe-area-inset-bottom));cursor:pointer;box-shadow:0 -2px 10px rgba(0,0,0,.18);user-select:none;-webkit-tap-highlight-color:transparent}
+.basket-bar.hidden{display:none}
+body.has-basket{padding-bottom:calc(2.6rem + env(safe-area-inset-bottom))}
+.basket-row{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.7rem 1rem;background:var(--white);border:1px solid var(--border);border-radius:.6rem;margin-bottom:.5rem}
+.basket-row .bn{font-weight:600;flex:1}
+.basket-row button{background:none;border:1px solid var(--border);border-radius:.4rem;padding:.3rem .8rem;color:var(--text-mid);cursor:pointer;font-family:'SiteFont','Heebo',sans-serif;font-size:.8rem}
+.grp-badge{display:inline-block;margin-inline-start:.4rem;padding:.05rem .5rem;border-radius:.35rem;font-size:.7rem;font-weight:700;background:rgba(155,142,196,.16);color:#6252A2}

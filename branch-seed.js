@@ -24,9 +24,12 @@ export const BRANCH_SEED = {
   'hafetz-haim': {
     address: 'הנחלים 9 חפץ חיים (משפחת שרעבי)',
     wazeAddress: 'הנחלים 9 חפץ חיים',
-    pickupNote: 'בתוך ארון בגינה שלנו',
+    pickupNote: 'בתוך ארון בפרגולה הקדמית שלנו',
     phone: '0544773388',
     whatsapp: '972544773388',
     donationUrl: DONATION_URL
   }
 };
+
+// Display names for the admin copy-items tool.
+export const BRANCH_NAMES = { 'mitzpe': 'מצפה יריחו', 'eilat': 'אילת', 'hafetz-haim': 'חפץ חיים' };

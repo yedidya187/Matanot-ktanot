@@ -56,9 +56,12 @@ service cloud.firestore {
       // חושף: שום קריאה כאן, רק כתיבה חד-כיוונית של המבקר לגבי עצמו.
       // חוסם: כל שדה שלא ברשימה, וכל ערך שלא עומד בתנאים (למשל name/phone
       // ריקים או ענקיים - הצפה/spam).
+      // groupId (אופציונלי): מזהה משותף לפריטים שנלקחו יחד בטופס אחד - כל פריט
+      // הוא מסמך השאלה נפרד, והמזהה רק מקשר ביניהם.
       allow create: if request.auth != null || (
-        request.resource.data.keys().hasOnly(['itemId','item','name','phone','date','timestamp','status','seen','returnToken','branch']) &&
+        request.resource.data.keys().hasOnly(['itemId','item','name','phone','date','timestamp','status','seen','returnToken','branch','groupId']) &&
         request.resource.data.get('branch', 'mitzpe') in ['mitzpe','eilat','hafetz-haim'] &&
+        request.resource.data.get('groupId', '') is string && request.resource.data.get('groupId', '').size() <= 64 &&
         request.resource.data.itemId is string &&
         request.resource.data.item is string && request.resource.data.item.size() > 0 && request.resource.data.item.size() <= 200 &&
         request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&

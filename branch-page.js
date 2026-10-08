@@ -36,6 +36,9 @@ export function branchPageHtml() {
   <section class="catalog" id="cat-sec">
     <div class="cat-head">
       <h2>הדייטים שלנו <span class="heart-anim">&#9829;</span></h2>
+      <div class="cat-search">
+        <input id="catalog-search" type="search" placeholder="&#128269; חיפוש לפי שם או תיאור..." autocomplete="off" enterkeyhint="search" aria-label="חיפוש בקטלוג"/>
+      </div>
       <div class="filters" id="filters">
         <button class="fb-cat on" id="filter-all" data-cat="הכל">הכל</button>
         ${CATEGORIES.map(c => `<button class="fb-cat" data-cat="${c.name}">${c.filterIcon} ${c.name}</button>`).join("")}
@@ -70,33 +73,26 @@ export function branchPageHtml() {
       <!-- BORROW -->
       <div id="section-borrow" class="hidden">
         <h2>לקחתי פריט &#128149;</h2>
-        <p class="sub">חפשו או בחרו את הפריט שלקחתם</p>
-        <div id="borrow-search-wrap" class="fg" style="margin-bottom:1rem">
-          <input id="borrow-search" placeholder="&#128269; חיפוש פריט..." style="width:100%;padding:.68rem .95rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.93rem;color:var(--text);background:var(--white);outline:none;direction:rtl"/>
-        </div>
-        <div class="borrow-grid" id="borrow-items-grid"></div>
-        <div id="borrow-form-wrap" class="hidden">
-          <div class="bpreview">
-            <div class="bi" id="preview-icon"></div>
-            <div style="flex:1"><strong id="preview-name"></strong><span id="preview-desc"></span></div>
-            <button id="btn-change-item" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:.82rem;text-decoration:underline">שנה</button>
-          </div>
-          <div class="frow">
-            <div class="fg"><label>שם</label><input id="f-name" placeholder="שם מלא" autocomplete="off"/></div>
-            <div class="fg"><label>טלפון</label><input id="f-phone" placeholder="05X-XXXXXXX" type="tel" autocomplete="off"/></div>
+        <div id="basket-wrap" class="hidden">
+          <h3 style="color:var(--teal-dark);margin-bottom:.8rem">הפריטים שבחרתם</h3>
+          <div id="basket-list"></div>
+          <div class="frow" style="margin-top:1rem">
+            <div class="fg"><label>שם</label><input id="bk-name" placeholder="שם מלא" autocomplete="off"/></div>
+            <div class="fg"><label>טלפון</label><input id="bk-phone" placeholder="05X-XXXXXXX" type="tel" autocomplete="off"/></div>
           </div>
           <div class="fg" style="background:var(--teal-light);padding:.9rem 1rem;border-radius:.6rem;border:1px solid var(--teal-mid)">
             <label style="display:flex;align-items:flex-start;gap:.75rem;cursor:pointer;font-size:.9rem">
-              <input type="checkbox" id="f-confirm" style="margin-top:.15rem;accent-color:var(--teal);width:18px;height:18px;flex-shrink:0"/>
-              <span>אני מאשר/ת שלקחתי את הפריט ואחזיר/ו אותו בתום השימוש במצב תקין</span>
+              <input type="checkbox" id="bk-confirm" style="margin-top:.15rem;accent-color:var(--teal);width:18px;height:18px;flex-shrink:0"/>
+              <span>אני מאשר/ת שלקחתי את הפריטים ואחזיר/ו אותם בתום השימוש במצב תקין</span>
             </label>
           </div>
-          <button class="sbtn" id="btn-submit-borrow">סימון לקיחה &#128149;</button>
-          <div class="clnk"><button id="btn-cancel-borrow">חזרה</button></div>
+          <button class="sbtn" id="btn-submit-basket">סימון לקיחה &#128149;</button>
+          <div class="clnk"><button id="btn-cancel-basket">חזרה</button></div>
         </div>
         <div id="borrow-success" class="sbox hidden">
           <div class="si">&#127881;</div>
           <h3>נרשם! תהנו! &#128149;</h3>
+          <div id="borrow-result" style="margin-top:.6rem"></div>
           <div class="pickup-box">
             <strong>&#128205; איפה נמצא הגמ"ח?</strong>
             <span id="success-location"></span>
@@ -236,6 +232,7 @@ export function branchPageHtml() {
         <button class="atab" id="tab-items">&#127922; פריטים</button>
         <button class="atab" id="tab-messages">&#9993; הודעות <span class="notif-badge hidden" id="messages-badge"></span></button>
         <button class="atab" id="tab-reviews">&#127775; ביקורות <span class="notif-badge hidden" id="reviews-badge"></span></button>
+        <button class="atab" id="tab-settings">&#9881; הגדרות הסניף</button>
         <button class="atab" id="tab-stats">&#128202; דשבורד</button>
       </div>
       <div id="admin-notif">
@@ -267,6 +264,22 @@ export function branchPageHtml() {
         </div>
         <div id="migration-box" class="asec hidden"></div>
         <div id="branch-seed-box" class="asec hidden"></div>
+        <details class="asec" id="copy-tool">
+          <summary style="cursor:pointer;font-weight:700;color:var(--teal-dark)">&#128203; העתקת פריטים מסניף אחר</summary>
+          <div style="margin-top:1rem">
+            <div class="fg"><label>סניף מקור</label>
+              <select id="copy-source" style="width:100%;padding:.6rem .9rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.93rem;direction:rtl;background:var(--white)">
+                <option value="">בחרו סניף...</option>
+              </select>
+            </div>
+            <div id="copy-status" style="font-size:.88rem;margin-bottom:.6rem"></div>
+            <div id="copy-controls" class="hidden" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.6rem">
+              <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-weight:600"><input type="checkbox" id="copy-all" style="width:18px;height:18px;accent-color:var(--teal)"/> סמן הכל</label>
+              <button class="sbtn" id="btn-copy-items" style="width:auto;padding:.6rem 1.4rem" disabled>העתק נבחרים (0)</button>
+            </div>
+            <div id="copy-list" class="copy-list"></div>
+          </div>
+        </details>
         <div class="asec" style="padding:.75rem 1rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
           <input id="admin-search" placeholder="&#128269; חיפוש..." style="flex:1;min-width:140px;padding:.5rem .85rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem;direction:rtl" id="admin-search"/>
           <select id="admin-cat-filter" style="padding:.5rem .85rem;border:1.5px solid var(--border);border-radius:.5rem;font-family:'SiteFont','Heebo',sans-serif;font-size:.88rem;direction:rtl;background:var(--white)">
@@ -288,6 +301,22 @@ export function branchPageHtml() {
         <div class="asec">
           <h3>&#127775; ביקורות מגולשים</h3>
           <div id="reviews-list"></div>
+        </div>
+      </div>
+      <div id="admin-settings" class="hidden">
+        <div class="asec">
+          <h3>&#9881; הגדרות הסניף</h3>
+          <p id="bs-note" style="font-size:.85rem;color:var(--text-mid);margin-bottom:1rem"></p>
+          <div class="fg"><label>כתובת (כפי שמוצגת באתר)</label><input id="bs-address" autocomplete="off" maxlength="200"/></div>
+          <div class="fg"><label>כתובת לוויז (אם ריק, תשמש הכתובת למעלה)</label><input id="bs-waze" autocomplete="off" maxlength="150"/></div>
+          <div class="frow">
+            <div class="fg"><label>טלפון</label><input id="bs-phone" type="tel" autocomplete="off" maxlength="20" placeholder="05X-XXXXXXX"/></div>
+            <div class="fg"><label>וואטסאפ (אם ריק, לפי הטלפון)</label><input id="bs-whatsapp" type="tel" autocomplete="off" maxlength="20" placeholder="05X-XXXXXXX"/></div>
+          </div>
+          <div class="fg"><label>קישור תרומה</label><input id="bs-donate" type="url" autocomplete="off" maxlength="300" placeholder="https://..."/></div>
+          <div class="fg"><label>הערת איסוף (למשל: בתוך ארון בגינה שלנו)</label><input id="bs-pickup" autocomplete="off" maxlength="150"/></div>
+          <button class="sbtn" id="btn-save-settings">שמירה</button>
+          <div id="bs-status" style="margin-top:.7rem;font-size:.9rem"></div>
         </div>
       </div>
       <div id="admin-stats" class="hidden">
@@ -340,6 +369,9 @@ export function branchPageHtml() {
     <button class="save-btn" id="edit-save-btn">שמירה &#10003;</button>
   </div>
 </div>
+
+<!-- Selected-items strip: only visible while something is selected -->
+<div id="basket-bar" class="basket-bar hidden" role="button" tabindex="0"></div>
 
 `;
 }

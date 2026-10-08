@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, runTransaction, increment, writeBatch, query, where, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, collection, doc, getDocs, addDoc, updateDoc, deleteDoc, runTransaction, increment, writeBatch, query, where, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { BRANCH_IDS, CATEGORIES, KIT_CATEGORY, WA_TEXT } from './shared.js';
 import { branchPageHtml } from './branch-page.js';
@@ -94,7 +94,8 @@ const CAT_ICONS = Object.fromEntries(CATEGORIES.map(c => [c.name, c.icon]));
 const PLACEHOLDERS = Object.fromEntries(CATEGORIES.map(c => [c.name, c.placeholder]));
 const CAT_NAMES = CATEGORIES.map(c => c.name);
 
-let items=[], loans=[], messages=[], reviews=[], selectedItem=null, catFilter='הכל', editId=null, editImgData='', modalItem=null;
+let basket=[], basketOpen=false, pageName='home', searchRaw='', searchQuery='';
+let items=[], loans=[], messages=[], reviews=[], catFilter='הכל', editId=null, editImgData='', modalItem=null;
 let loanSort={col:'date',dir:'desc'};
 
 // ── LOAD DATA ──
@@ -109,6 +110,18 @@ async function loadItems(){
   // Then: load with images in background
   items = snap.docs.map(d=>({id:d.id,...d.data()}));
   cachedSample=[];
+  renderGrid();
+}
+
+// Re-reads this branch's items without reshuffling the catalog (loadItems()
+// is for the first load). Used by the admin panel's refreshes.
+async function refreshItems(){
+  const snap = await getDocs(query(collection(db,'items'),where('branch','==',BRANCH)));
+  items = snap.docs.map(d=>({id:d.id,...d.data()}));
+  const byId=new Map(items.map(i=>[i.id,i]));
+  cachedSample=cachedSample.map(i=>byId.get(i.id)).filter(Boolean);
+  const known=new Set(cachedSample.map(i=>i.id));
+  items.forEach(i=>{if(!known.has(i.id))cachedSample.push(i);});
   renderGrid();
 }
 
@@ -161,6 +174,7 @@ function statusLabel(s){return s==='av'?'פנוי להשאלה':'כרגע אצל
 
 // ── PAGES ──
 function showPage(p){
+  pageName=p;updateBasketUI();
   ['home','about','admin'].forEach(x=>document.getElementById('page-'+x).classList.toggle('hidden',x!==p));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
   const nb=document.getElementById('nav-'+p);if(nb)nb.classList.add('on');
@@ -196,6 +210,15 @@ let cachedSample=[];
 let currentPage=1;
 const PAGE_SIZE=8;
 
+// Instant search over the items already in memory: name and description,
+// combined with the category filter. No request to the server.
+const normSearch=s=>String(s||'').toLowerCase().trim();
+const matchesSearch=(i,q)=>normSearch(i.name).includes(q)||normSearch(i.desc).includes(q);
+function setSearch(raw){
+  searchRaw=raw;searchQuery=normSearch(raw);
+  currentPage=1;
+  renderGrid();
+}
 function renderGrid(){
   const grid=document.getElementById('items-grid');
   const pgDiv=document.getElementById('pagination');
@@ -219,8 +242,13 @@ function renderGrid(){
     pool=items.filter(i=>cleanCat(i.cat)===catFilter);
   }
   
+  if(searchQuery)pool=pool.filter(i=>matchesSearch(i,searchQuery));
+
   if(!pool.length){
-    grid.innerHTML='<div class="empty"><div class="ei">&#128269;</div>לא נמצאו פריטים</div>';
+    grid.innerHTML=searchQuery
+      ?`<div class="empty"><div class="ei">&#128269;</div>לא נמצאו פריטים שמתאימים ל-"${esc(searchRaw.trim())}"${catFilter!=='הכל'?' בקטגוריה הזו':''}.<br/><button class="fb-cat" id="btn-clear-search" style="margin-top:.9rem">ניקוי החיפוש</button></div>`
+      :'<div class="empty"><div class="ei">&#128269;</div>לא נמצאו פריטים</div>';
+    document.getElementById('btn-clear-search')?.addEventListener('click',()=>{document.getElementById('catalog-search').value='';setSearch('');});
     pgDiv.style.display='none';
     return;
   }
@@ -240,11 +268,11 @@ function renderGrid(){
         <div class="cname">${esc(item.name)}</div>
         <div class="cdesc">${esc(item.desc||'')}</div>
         <div class="sdot ${st}">${statusLabel(st)}</div>
-        <button class="bbtn" ${st!=='av'?'disabled':''} data-borrow="${item.id}">${st==='av'?'השאלה ←':'כרגע אצל זוג מאושר אחר ♥'}</button>
+        ${st==='av'?`<button class="bbtn bbtn-add${basket.includes(item.id)?' on':''}" data-add="${item.id}">${basket.includes(item.id)?ADD_ON_LABEL:ADD_LABEL}</button>`:'<button class="bbtn" disabled>כרגע אצל זוג מאושר אחר ♥</button>'}
       </div></div>`;
   }).join('');
   
-  grid.querySelectorAll('[data-borrow]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();openBorrowFromCard(btn.dataset.borrow);}));
+  grid.querySelectorAll('[data-add]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();toggleBasket(btn.dataset.add);}));
   grid.querySelectorAll('[data-id]').forEach(card=>card.addEventListener('click',()=>openModal(card.dataset.id)));
   
   // Pagination buttons
@@ -275,9 +303,7 @@ function openModal(id){
     if(item.kitWe) ks.innerHTML+=`<div class="kit-section"><h4>&#9989; אנחנו כבר דאגנו ל...</h4><p style="white-space:pre-line">${esc(item.kitWe)}</p></div>`;
     if(item.kitYou) ks.innerHTML+=`<div class="kit-section orange"><h4>&#127968; עוד קצת השקעה מהבית</h4><p style="white-space:pre-line">${esc(item.kitYou)}</p></div>`;
   }
-  const btn=document.getElementById('modal-borrow-btn');
-  btn.disabled=st!=='av';
-  btn.innerHTML=st==='av'?'השאלה &#128154;':'לא זמין כעת';
+  syncModalBtn();
   document.getElementById('modal-overlay').classList.remove('hidden');
   document.body.style.overflow='hidden';
   // Track view - best-effort background telemetry, not a user-initiated
@@ -293,13 +319,15 @@ function showSection(sec){
   document.getElementById('section-borrow').classList.toggle('hidden',sec!=='borrow');
   document.getElementById('section-return').classList.toggle('hidden',sec!=='return');
   document.getElementById('action-sec').scrollIntoView({behavior:'smooth'});
+  basketOpen=false;
+  updateBasketUI();
   if(sec==='borrow'){
-    renderBorrowGrid();
-    document.getElementById('borrow-form-wrap').classList.add('hidden');
+    document.getElementById('basket-wrap').classList.add('hidden');
+    document.getElementById('borrow-result').innerHTML='';
     document.getElementById('borrow-success').classList.add('hidden');
-    document.getElementById('borrow-items-grid').classList.remove('hidden');
   }
   if(sec==='return'){
+    document.getElementById('basket-wrap').classList.add('hidden');
     document.getElementById('r-return-success').classList.add('hidden');
     document.getElementById('r-feedback-box').classList.add('hidden');
     placeReviewBox(document.getElementById('r-return-success'));
@@ -313,97 +341,123 @@ function showSection(sec){
   }
 }
 
-function renderBorrowGrid(query=''){
-  const grid=document.getElementById('borrow-items-grid');
-  const q=(query||'').trim().toLowerCase();const available=items.filter(i=>isAvailable(i)==='av'&&(!q||i.name.toLowerCase().includes(q)||(i.cat||'').toLowerCase().includes(q)||(i.desc||'').toLowerCase().includes(q)));
-  if(!available.length){grid.innerHTML='<div class="empty"><div class="ei">&#128149;</div>כל הפריטים מושאלים כרגע</div>';return;}
-  grid.innerHTML=available.map(item=>{
-    const img=item.img||PLACEHOLDERS[item.cat]||'';
-    return `<div class="borrow-card" data-bid="${item.id}">
-      <img class="bc-img" src="${img}" alt="${esc(item.name)}" loading="lazy" onerror="this.style.display='none'"/>
-      <div class="bc-name">${esc(item.name)}</div>
-      <div class="bc-cat">${esc(item.cat)}</div>
-    </div>`;
+// ── BORROW (the only way to borrow) ──
+// Items are collected with "הוסף להשאלה", shown as a thin strip at the bottom
+// of the screen, and borrowed together in one form. Each item still gets its
+// own loan document (so returns stay per item), all sharing one groupId.
+const ADD_LABEL='הוסף להשאלה', ADD_ON_LABEL='✓ נבחר (הסר)';
+function toggleBasket(id){
+  const it=items.find(i=>i.id===id);
+  if(basket.includes(id))basket=basket.filter(x=>x!==id);
+  else if(it&&isAvailable(it)==='av')basket.push(id);
+  updateBasketUI();
+}
+function syncModalBtn(){
+  if(!modalItem)return;
+  const btn=document.getElementById('modal-borrow-btn');
+  const av=isAvailable(modalItem)==='av';
+  btn.disabled=!av;
+  btn.textContent=!av?'לא זמין כעת':basket.includes(modalItem.id)?ADD_ON_LABEL:ADD_LABEL;
+}
+function updateBasketUI(){
+  // an item taken in the meantime (e.g. borrowed on its own) can't stay selected
+  basket=basket.filter(id=>{const it=items.find(i=>i.id===id);return it&&isAvailable(it)==='av';});
+  document.querySelectorAll('[data-add]').forEach(b=>{
+    const on=basket.includes(b.dataset.add);
+    b.classList.toggle('on',on);
+    b.textContent=on?ADD_ON_LABEL:ADD_LABEL;
+  });
+  syncModalBtn();
+  const bar=document.getElementById('basket-bar');
+  if(!bar)return;
+  const show=basket.length>0&&pageName==='home'&&!basketOpen;
+  bar.classList.toggle('hidden',!show);
+  document.body.classList.toggle('has-basket',show);
+  if(show)bar.textContent=basket.length===1?'נבחר פריט אחד להשאלה · לחצו להמשך':`נבחרו ${basket.length} פריטים להשאלה · לחצו להמשך`;
+}
+function renderBasketList(){
+  const list=document.getElementById('basket-list');
+  list.innerHTML=basket.map(id=>{
+    const it=items.find(i=>i.id===id);
+    return it?`<div class="basket-row"><span class="bn">${esc(it.name)}</span><button data-brm="${it.id}">הסר</button></div>`:'';
   }).join('');
-  grid.querySelectorAll('[data-bid]').forEach(c=>c.addEventListener('click',()=>selectBorrowItem(c.dataset.bid)));
+  list.querySelectorAll('[data-brm]').forEach(b=>b.addEventListener('click',()=>{
+    basket=basket.filter(x=>x!==b.dataset.brm);
+    if(!basket.length){showSection('borrow');return;}
+    renderBasketList();updateBasketUI();
+  }));
 }
-
-function openBorrowFromCard(id){
+// Menu button / links: the catalog is where items are chosen. Already chosen
+// something? Go straight to the form.
+function goBorrow(){
+  showPage('home');
+  if(basket.length){openBasketForm();return;}
+  setTimeout(()=>document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'}),50);
+}
+function openBasketForm(){
+  if(!basket.length)return;
   showSection('borrow');
-  setTimeout(()=>selectBorrowItem(id),100);
-}
-
-function selectBorrowItem(id){
-  selectedItem=items.find(i=>i.id===id);if(!selectedItem)return;
-  document.getElementById('preview-icon').innerHTML=CAT_ICONS[selectedItem.cat]||'';
-  document.getElementById('preview-name').textContent=selectedItem.name;
-  document.getElementById('preview-desc').textContent=selectedItem.desc||'';
-  document.getElementById('f-name').value='';
-  document.getElementById('f-phone').value='';
-  document.getElementById('f-confirm').checked=false;
-  const sbtn=document.getElementById('btn-submit-borrow');
-  sbtn.disabled=false;
-  sbtn.textContent='סימון לקיחה \u{1F499}';
-  document.getElementById('borrow-items-grid').classList.add('hidden');
-  document.getElementById('borrow-form-wrap').classList.remove('hidden');
   document.getElementById('borrow-success').classList.add('hidden');
-  // Hide search when item selected
-  const searchWrap=document.getElementById('borrow-search-wrap');
-  if(searchWrap) searchWrap.style.display='none';
+  document.getElementById('basket-wrap').classList.remove('hidden');
+  document.getElementById('bk-confirm').checked=false;
+  const btn=document.getElementById('btn-submit-basket');btn.disabled=false;btn.textContent='סימון לקיחה \u{1F499}';
+  renderBasketList();
+  basketOpen=true;updateBasketUI();
 }
-
-async function submitBorrow(){
-  const name=document.getElementById('f-name').value.trim();
-  const phone=document.getElementById('f-phone').value.trim();
-  const confirmed=document.getElementById('f-confirm').checked;
+async function submitBasket(){
+  const name=document.getElementById('bk-name').value.trim();
+  const phone=document.getElementById('bk-phone').value.trim();
   if(!name||!phone){alert('יש למלא שם וטלפון');return;}
-  if(!confirmed){alert('יש לאשר את התנאים');return;}
-  // Fast local pre-check for instant feedback - NOT the real guard (that's
-  // the transaction below, which reads the item fresh from the server and
-  // is the only thing that can't be fooled by a stale local cache/race).
-  if(isAvailable(selectedItem)!=='av'){alert('הפריט כבר מושאל!');return;}
-  const btn=document.getElementById('btn-submit-borrow');
-  btn.disabled=true;
-  btn.textContent='שולח...';
-  const itemRef=doc(db,'items',selectedItem.id);
-  const loanRef=doc(collection(db,'loans'));
-  const returnToken=genToken();
-  const loanData={itemId:selectedItem.id,item:selectedItem.name,name,phone,date:new Date().toLocaleDateString('he-IL'),timestamp:new Date().toISOString(),status:'פעיל',seen:false,returnToken,branch:BRANCH};
+  if(!document.getElementById('bk-confirm').checked){alert('יש לאשר את התנאים');return;}
+  const chosen=basket.map(id=>items.find(i=>i.id===id)).filter(Boolean);
+  if(!chosen.length){alert('לא נבחרו פריטים.');return;}
+  const btn=document.getElementById('btn-submit-basket');
+  btn.disabled=true;btn.textContent='שולח...';
+  const now=new Date();
+  const shared={name,phone,date:now.toLocaleDateString('he-IL'),timestamp:now.toISOString(),status:'פעיל',seen:false,branch:BRANCH,groupId:genToken()};
+  const prepared=chosen.map(it=>({it,itemRef:doc(db,'items',it.id),loanRef:doc(collection(db,'loans')),returnToken:genToken()}));
   try{
-    await runTransaction(db, async(tx)=>{
-      const snap=await tx.get(itemRef);
-      if(!snap.exists()) throw new Error('ITEM_MISSING');
-      if(snap.data().available===false) throw new Error('TAKEN');
-      tx.update(itemRef,{available:false,borrows:increment(1)});
-      tx.set(loanRef,loanData);
+    // One transaction. An item that was taken in the meantime is skipped and
+    // reported; the others are still recorded.
+    const {ok,blocked}=await runTransaction(db,async(tx)=>{
+      const snaps=await Promise.all(prepared.map(p=>tx.get(p.itemRef)));
+      const ok=[],blocked=[];
+      snaps.forEach((snap,i)=>{
+        if(!snap.exists()||snap.data().available===false)blocked.push(prepared[i]);else ok.push(prepared[i]);
+      });
+      ok.forEach(p=>{
+        tx.update(p.itemRef,{available:false,borrows:increment(1)});
+        tx.set(p.loanRef,{itemId:p.it.id,item:p.it.name,...shared,returnToken:p.returnToken});
+      });
+      return {ok,blocked};
     });
-    selectedItem.available=false;
-    addMyLoan({loanId:loanRef.id,itemId:selectedItem.id,itemName:selectedItem.name,date:loanData.date,returnToken});
+    ok.forEach(p=>{
+      p.it.available=false;
+      addMyLoan({loanId:p.loanRef.id,itemId:p.it.id,itemName:p.it.name,date:shared.date,returnToken:p.returnToken,groupId:shared.groupId});
+    });
+    blocked.forEach(p=>{p.it.available=false;});
+    basket=[];
     renderGrid();
-    document.getElementById('borrow-form-wrap').classList.add('hidden');
+    const blockedNames=blocked.map(p=>'"'+p.it.name+'"').join(', ');
+    if(!ok.length){
+      alert((blocked.length===1?'הפריט שבחרתם כבר נלקח':'הפריטים שבחרתם כבר נלקחו')+' על ידי מישהו אחר ולא נרשם: '+blockedNames+'. רעננו את הדף ובחרו פריטים אחרים.');
+      showSection('borrow');
+      return;
+    }
+    showSection('borrow');
+    document.getElementById('borrow-result').innerHTML=
+      `<p style="font-weight:700;color:var(--teal-dark)">נרשמו ${ok.length} ${ok.length===1?'פריט':'פריטים'}</p>`+
+      (blocked.length?`<p style="color:#B05030;margin-top:.4rem">${blocked.length===1?'הפריט הבא לא היה זמין ולא נרשם':'הפריטים הבאים לא היו זמינים ולא נרשמו'}: ${esc(blockedNames)}</p>`:'');
     document.getElementById('borrow-success').classList.remove('hidden');
-    notifyTelegram(loanData);
-    // Send notification via SW (works on Android)
-    if(Notification.permission==='granted' && 'serviceWorker' in navigator){
+    notifyTelegram({...shared,item:ok.map(p=>p.it.name).join(', ')});
+    if(typeof Notification!=='undefined'&&Notification.permission==='granted'&&'serviceWorker' in navigator){
       navigator.serviceWorker.ready.then(reg=>{
-        reg.showNotification('השאלה חדשה ♥',{
-          body: name + ' לקח/ה את ' + selectedItem.name,
-          icon: 'logo.gif',
-          dir: 'rtl',
-          vibrate: [200,100,200]
-        });
+        reg.showNotification('השאלה חדשה ♥',{body:name+' לקח/ה '+ok.length+' פריטים',icon:'logo.gif',dir:'rtl',vibrate:[200,100,200]});
       }).catch(()=>{});
     }
   }catch(e){
-    if(e.message==='TAKEN'){
-      alert('אופס, מישהו כבר לקח את הפריט הזה כמה רגעים לפניכם. רעננו את הדף ונסו פריט אחר.');
-    }else if(e.message==='ITEM_MISSING'){
-      alert('הפריט הזה כבר לא קיים בקטלוג. רעננו את הדף.');
-    }else{
-      alert(logAndMessage(e,'שגיאה בשמירת ההשאלה. נסו שוב בעוד רגע, ואם זה נמשך פנו למנהל.'));
-    }
-    btn.disabled=false;
-    btn.textContent='סימון לקיחה \u{1F499}';
+    alert(logAndMessage(e,'שגיאה בשמירת ההשאלה. נסו שוב בעוד רגע, ואם זה נמשך פנו למנהל.'));
+    btn.disabled=false;btn.textContent='סימון לקיחה \u{1F499}';
   }
 }
 
@@ -444,7 +498,7 @@ async function confirmReturn(loanId){
     renderMyLoans();
     document.getElementById('r-return-success').classList.remove('hidden');
     showReviewBoxAfter(document.getElementById('r-return-success'));
-    // Best-effort local notification, mirrors submitBorrow's - only fires
+    // Best-effort local notification - only fires
     // if this exact browser happens to have notification permission granted
     // (in practice: an admin testing/returning from their own device). The
     // real cross-device delivery to the admin is startPolling()'s 30s check.
@@ -582,8 +636,35 @@ async function tryLogin(){
   }
 }
 
+let adminTab='notif';
+// Which data each admin tab shows, so opening it always starts from the
+// database and not from what was loaded at sign-in.
+const ADMIN_TAB_LOADERS={
+  notif:()=>Promise.all([loadLoans(),loadMessages(),loadReviews()]),
+  loans:()=>loadLoans(),
+  items:()=>Promise.all([refreshItems(),loadLoans()]),
+  stats:()=>Promise.all([refreshItems(),loadLoans()]),
+  messages:()=>loadMessages(),
+  reviews:()=>loadReviews()
+};
+function renderAdminData(){
+  renderAllAdmin();renderAdminItems();
+  if(adminTab==='stats')renderStats();
+}
+async function refreshAdminTab(tab){
+  const load=ADMIN_TAB_LOADERS[tab];
+  if(!load)return;
+  try{
+    await load();
+  }catch(e){
+    alert(logAndMessage(e,'שגיאה בריענון הנתונים. ייתכן שמוצג מידע לא עדכני.'));
+    return;
+  }
+  if(adminTab===tab)renderAdminData();
+}
 function setAdminTab(tab){
-  ['notif','loans','items','stats','messages','reviews'].forEach(t=>{
+  adminTab=tab;
+  ['notif','loans','items','stats','messages','reviews','settings'].forEach(t=>{
     document.getElementById('admin-'+t).classList.toggle('hidden',t!==tab);
     document.getElementById('tab-'+t).classList.toggle('on',t===tab);
   });
@@ -591,6 +672,9 @@ function setAdminTab(tab){
   if(tab==='stats') renderStats();
   if(tab==='messages') renderAdminMessages();
   if(tab==='reviews') renderAdminReviews();
+  if(tab==='settings') fillSettingsForm();
+  if(tab==='items') initCopyTool();
+  refreshAdminTab(tab);
 }
 
 function sortedLoans(){
@@ -625,12 +709,14 @@ function renderAdminLoans(){
   document.getElementById('loans-title').textContent=`ניהול השאלות (${loans.length})`;
   updateSortArrows();
   if(!loans.length){el.innerHTML='<div class="empty"><div class="ei">&#128237;</div>אין השאלות עדיין</div>';return;}
+  const groupSize={};loans.forEach(l=>{if(l.groupId)groupSize[l.groupId]=(groupSize[l.groupId]||0)+1;});
+  const hue=g=>[...g].reduce((h,c)=>(h*31+c.charCodeAt(0))%360,7);
   el.innerHTML=sortedLoans().map(l=>`
-    <div class="lrow">
+    <div class="lrow"${l.groupId&&groupSize[l.groupId]>1?` style="border-inline-start:4px solid hsl(${hue(l.groupId)} 55% 55%)"`:''}>
       <span class="lid" style="font-weight:700;color:var(--teal);font-size:.8rem">${l.id.slice(-4)}</span>
       <span style="font-weight:600;font-size:.84rem">${esc(l.item)}</span>
       <span class="sbadge ${l.status==='פעיל'?'act':'ret'}">${esc(l.status)}</span>
-      <span style="color:var(--text-mid);font-size:.78rem;grid-column:2">${esc(l.name)} &middot; ${esc(l.phone)} &middot; ${esc(l.date||'')}</span>
+      <span style="color:var(--text-mid);font-size:.78rem;grid-column:2">${esc(l.name)} &middot; ${esc(l.phone)} &middot; ${esc(l.date||'')}${l.groupId&&groupSize[l.groupId]>1?`<span class="grp-badge" title="הפריטים האלה נלקחו יחד באותה השאלה">&#128279; השאלה משותפת · ${groupSize[l.groupId]} פריטים</span>`:''}</span>
       ${l.status==='פעיל'?`<button class="retbtn" data-lid="${l.id}">החזיר</button>`:''}
       <button class="delbtn" data-del="${l.id}" style="font-size:.72rem;padding:.22rem .55rem">מחק</button>
     </div>`).join('');
@@ -681,6 +767,17 @@ let lastLoanCount=0, lastMsgCount=0, lastReviewCount=0, pollingInterval=null;
 // Old reviews written before the `seen` field existed have it undefined -
 // only an explicit false counts as a new, unread review.
 const unseenLoans=()=>loans.filter(l=>!l.seen);
+// One notification per group of items borrowed (or returned) together.
+function groupedLoanNotifs(){
+  const groups=[],byKey=new Map();
+  unseenLoans().forEach(l=>{
+    const key=l.groupId?l.groupId+'|'+l.status:l.id;
+    let g=byKey.get(key);
+    if(!g){g={key,status:l.status,name:l.name,phone:l.phone,date:l.date,loans:[]};byKey.set(key,g);groups.push(g);}
+    g.loans.push(l);
+  });
+  return groups;
+}
 const unseenMessages=()=>messages.filter(m=>!m.seen);
 const unseenReviews=()=>reviews.filter(r=>r.seen===false);
 function renderAllAdmin(){renderNotifications();renderAdminLoans();renderAdminMessages();renderAdminReviews();}
@@ -688,21 +785,21 @@ function startPolling(){
   if(pollingInterval)return;
   pollingInterval=setInterval(async()=>{
     try{
-      await Promise.all([loadLoans(),loadMessages(),loadReviews()]);
+      await Promise.all([loadLoans(),loadMessages(),loadReviews(),refreshItems()]);
     }catch(e){
       console.warn('admin poll failed',e);
       return;
     }
     // Unseen loans cover BOTH a new borrow (status='פעיל') and a return
     // (status='הוחזר', including self-return) - see the `seen:false` write in
-    // confirmReturn()/submitBorrow().
-    const unseen=unseenLoans(), newMsgs=unseenMessages(), newReviews=unseenReviews();
+    // confirmReturn()/submitBasket().
+    const unseen=groupedLoanNotifs(), newMsgs=unseenMessages(), newReviews=unseenReviews();
     const canPush=typeof Notification!=='undefined'&&Notification.permission==='granted';
     if(canPush){
       if(unseen.length>lastLoanCount){
-        unseen.slice(lastLoanCount).forEach(l=>{
-          const isReturn=l.status==='הוחזר';
-          new Notification(isReturn?'החזרה':'השאלה חדשה',{body:l.name+(isReturn?' החזיר/ה את ':' לקח/ה את ')+l.item});
+        unseen.slice(lastLoanCount).forEach(g=>{
+          const isReturn=g.status==='הוחזר';
+          new Notification(isReturn?'החזרה':'השאלה חדשה',{body:g.name+(isReturn?' החזיר/ה ':' לקח/ה ')+loanGroupText(g)});
         });
       }
       if(newMsgs.length>lastMsgCount){
@@ -717,7 +814,7 @@ function startPolling(){
       }
     }
     lastLoanCount=unseen.length;lastMsgCount=newMsgs.length;lastReviewCount=newReviews.length;
-    renderAllAdmin();
+    renderAdminData();
   },30000);
 }
 function stopPolling(){if(pollingInterval){clearInterval(pollingInterval);pollingInterval=null;}}
@@ -737,10 +834,17 @@ async function clearAllNotifications(){
     alert(logAndMessage(e,'שגיאה בעדכון ההתראות. נסה שוב.'));
   }
 }
-async function markSeen(col,id){
+async function markSeen(col,idList){
+  const ids=String(idList).split(',');
   try{
-    await updateDoc(doc(db,col,id),{seen:true});
-    const mark=arr=>arr.map(x=>x.id===id?{...x,seen:true}:x);
+    if(ids.length===1)await updateDoc(doc(db,col,ids[0]),{seen:true});
+    else{
+      const b=writeBatch(db);
+      ids.forEach(x=>b.update(doc(db,col,x),{seen:true}));
+      await b.commit();
+    }
+    const set=new Set(ids);
+    const mark=arr=>arr.map(x=>set.has(x.id)?{...x,seen:true}:x);
     if(col==='loans')loans=mark(loans);
     else if(col==='messages')messages=mark(messages);
     else reviews=mark(reviews);
@@ -752,9 +856,13 @@ async function markSeen(col,id){
 // One list for everything that needs the admin's attention. Messages come
 // first and are visually loud: a message may be a report of a return that
 // needs handling, not just an FYI.
+// "X" for one item, "3 פריטים: A, B, C" for several
+function loanGroupText(g){
+  return g.loans.length===1?'את '+g.loans[0].item:g.loans.length+' פריטים: '+g.loans.map(l=>l.item).join(', ');
+}
 function renderNotifications(){
   const nMsgs=unseenMessages().sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
-  const nLoans=unseenLoans();
+  const nLoans=groupedLoanNotifs();
   const nReviews=unseenReviews().sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
   const total=nMsgs.length+nLoans.length+nReviews.length;
   const badge=document.getElementById('notif-badge');
@@ -770,13 +878,13 @@ function renderNotifications(){
       <div class="notif-body"><strong>הודעה חדשה</strong><span class="notif-tag">דורש טיפול</span><br/><strong>${esc(m.name)}</strong> &middot; ${esc(m.phone)}<div style="margin-top:.3rem;white-space:pre-line">${esc(m.message||'')}</div><div class="notif-date">${esc(when(m.timestamp))}</div></div>
       <button class="notif-seen" data-ncol="messages" data-nid="${m.id}">&#10003;</button>
     </div>`).join('');
-  const loanHtml=nLoans.map(l=>{
-    const isReturn=l.status==='הוחזר';
+  const loanHtml=nLoans.map(g=>{
+    const isReturn=g.status==='הוחזר';
     return `
     <div class="notif-item">
       <div style="font-size:1.5rem">${isReturn?'&#9996;':'&#128149;'}</div>
-      <div class="notif-body"><strong>${esc(l.name)}</strong> ${isReturn?'החזיר/ה את':'לקח/ה את'} <strong>${esc(l.item)}</strong><div class="notif-date">${esc(l.date||'')} &middot; ${esc(l.phone)}</div></div>
-      <button class="notif-seen" data-ncol="loans" data-nid="${l.id}">&#10003;</button>
+      <div class="notif-body"><strong>${esc(g.name)}</strong> ${isReturn?'החזיר/ה':'לקח/ה'} <strong>${esc(loanGroupText(g))}</strong><div class="notif-date">${esc(g.date||'')} &middot; ${esc(g.phone)}</div></div>
+      <button class="notif-seen" data-ncol="loans" data-nid="${g.loans.map(l=>l.id).join(',')}">&#10003;</button>
     </div>`;
   }).join('');
   const reviewHtml=nReviews.map(r=>`
@@ -878,21 +986,24 @@ function renderAdminItems(){
     if(!item)return;
     if(isAvailable(item)!=='av'){
       // Mark as returned
-      const activeLoan=loans.find(l=>l.itemId===item.id&&l.status==='פעיל'&&l.manual);
-      if(activeLoan){
-        if(!confirm('לסמן כהוחזר?'))return;
-        try{
-          const returnedTimestamp=new Date().toISOString();
-          const batch=writeBatch(db);
-          batch.update(doc(db,'loans',activeLoan.id),{status:'הוחזר',returnedTimestamp});
-          batch.update(doc(db,'items',item.id),{available:true});
-          await batch.commit();
-          loans=loans.map(l=>l.id===activeLoan.id?{...l,status:'הוחזר',returnedTimestamp}:l);
-          item.available=true;
-          renderAdminItems();renderGrid();renderAdminLoans();
-        }catch(e){
-          alert(logAndMessage(e,'שגיאה בסימון ההחזרה. נסה שוב.'));
-        }
+      // Any active loan on this item - borrowed through the site or added by hand.
+      const activeLoan=loans.find(l=>l.itemId===item.id&&l.status==='פעיל');
+      if(!activeLoan){
+        alert('לא נמצאה השאלה פעילה עבור "'+item.name+'", למרות שהפריט מסומן כלא זמין. כדאי לבדוק בטאב "השאלות".');
+        return;
+      }
+      if(!confirm('להחזיר את "'+item.name+'" מ-'+(activeLoan.name||'השואל')+'?'))return;
+      try{
+        const returnedTimestamp=new Date().toISOString();
+        const batch=writeBatch(db);
+        batch.update(doc(db,'loans',activeLoan.id),{status:'הוחזר',returnedTimestamp});
+        batch.update(doc(db,'items',item.id),{available:true});
+        await batch.commit();
+        loans=loans.map(l=>l.id===activeLoan.id?{...l,status:'הוחזר',returnedTimestamp}:l);
+        item.available=true;
+        renderAdminItems();renderGrid();renderAdminLoans();
+      }catch(e){
+        alert(logAndMessage(e,'שגיאה בסימון ההחזרה. נסה שוב.'));
       }
       return;
     }
@@ -1024,6 +1135,159 @@ async function runBranchSeed(){
     branchSeedPlan=null;
   }catch(e){
     alert(logAndMessage(e,'שגיאה ביצירת הגדרות הסניפים. נסה שוב.'));
+  }
+}
+
+// ── BRANCH SETTINGS EDITOR (admin tab "הגדרות הסניף") ──
+// Reads and writes only this page's branch record: branches/<BRANCH>.
+const SETTINGS_FIELDS={address:'bs-address',wazeAddress:'bs-waze',phone:'bs-phone',whatsapp:'bs-whatsapp',donationUrl:'bs-donate',pickupNote:'bs-pickup'};
+function setSettingsStatus(msg,ok){
+  const el=document.getElementById('bs-status');
+  el.textContent=msg;
+  el.style.color=ok?'var(--teal-dark)':'#B05030';
+}
+async function fillSettingsForm(){
+  setSettingsStatus('',true);
+  let s=branchSettings,saved=true;
+  try{
+    const snap=await getDoc(doc(db,'branches',BRANCH));
+    if(snap.exists())s=snap.data();else saved=false;
+  }catch(e){
+    alert(logAndMessage(e,'שגיאה בטעינת הגדרות הסניף. מוצגים הערכים הנוכחיים בעמוד.'));
+  }
+  Object.entries(SETTINGS_FIELDS).forEach(([k,id])=>{document.getElementById(id).value=s[k]||'';});
+  document.getElementById('bs-note').textContent=saved?'':'הגדרות הסניף עדיין לא נשמרו במסד - מוצגים ערכי ברירת המחדל. שמירה תיצור את הרשומה.';
+}
+async function saveBranchSettings(){
+  const v=id=>document.getElementById(id).value.trim();
+  const address=v('bs-address'),phone=v('bs-phone'),donationUrl=v('bs-donate');
+  if(!address){alert('יש למלא כתובת');return;}
+  if(!/^[0-9+\-\s()]{7,20}$/.test(phone)){alert('יש למלא מספר טלפון תקין');return;}
+  if(!/^https:\/\/\S+$/i.test(donationUrl)){alert('קישור התרומה חייב להתחיל ב-https://');return;}
+  const waRaw=v('bs-whatsapp').replace(/\D/g,'');
+  const whatsapp=!waRaw?toIntlPhone(phone):waRaw.startsWith('0')?toIntlPhone(waRaw):waRaw;
+  if(!/^\d{10,15}$/.test(whatsapp)){alert('מספר הוואטסאפ לא תקין');return;}
+  const data={address,wazeAddress:v('bs-waze'),phone,whatsapp,donationUrl,pickupNote:v('bs-pickup')};
+  const btn=document.getElementById('btn-save-settings');
+  btn.disabled=true;setSettingsStatus('שומר...',true);
+  try{
+    await setDoc(doc(db,'branches',BRANCH),data,{merge:true});
+    branchSettings={...branchSettings,...data};
+    applyBranchSettings();
+    document.getElementById('bs-whatsapp').value=whatsapp;
+    document.getElementById('bs-note').textContent='';
+    setSettingsStatus('✓ ההגדרות נשמרו והעמוד עודכן',true);
+  }catch(e){
+    setSettingsStatus('',true);
+    alert(logAndMessage(e,'שגיאה בשמירת ההגדרות. נסה שוב.'));
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+// ── COPY ITEMS FROM ANOTHER BRANCH (admin, items tab) ──
+// Lists the chosen branch's items (queried by that branch), lets the admin tick
+// the ones to copy and creates them here: name, description, category, image
+// (plus the kit texts of the special category, which are part of the
+// description). Counters start from zero, the copy is available and belongs
+// to this branch.
+let copySourceItems=[],copyRendered=false;
+const normName=n=>String(n||'').trim().replace(/\s+/g,' ').toLowerCase();
+const copyStatus=(msg,ok)=>{const el=document.getElementById('copy-status');el.textContent=msg;el.style.color=ok===false?'#B05030':'var(--teal-dark)';};
+async function initCopyTool(){
+  if(copyRendered)return;
+  copyRendered=true;
+  try{
+    const {BRANCH_NAMES}=await import('./branch-seed.js');
+    const sel=document.getElementById('copy-source');
+    BRANCH_IDS.filter(id=>id!==BRANCH).forEach(id=>sel.add(new Option(BRANCH_NAMES[id]||id,id)));
+  }catch(e){
+    copyRendered=false;
+    alert(logAndMessage(e,'שגיאה בטעינת רשימת הסניפים להעתקה.'));
+  }
+}
+async function loadCopySource(){
+  const id=document.getElementById('copy-source').value;
+  const list=document.getElementById('copy-list');
+  document.getElementById('copy-controls').classList.add('hidden');
+  list.innerHTML='';copySourceItems=[];copyStatus('',true);
+  if(!id)return;
+  copyStatus('טוען פריטים...',true);
+  try{
+    const snap=await getDocs(query(collection(db,'items'),where('branch','==',id)));
+    copySourceItems=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>String(a.name).localeCompare(String(b.name),'he'));
+    copyStatus(copySourceItems.length?'':'אין פריטים בסניף הזה.',true);
+    renderCopyList();
+  }catch(e){
+    copyStatus('',true);
+    alert(logAndMessage(e,'שגיאה בטעינת הפריטים מהסניף שנבחר. נסה שוב.'));
+  }
+}
+function renderCopyList(){
+  const list=document.getElementById('copy-list');
+  const existing=new Set(items.map(i=>normName(i.name)));
+  list.innerHTML=copySourceItems.map(it=>{
+    const dup=existing.has(normName(it.name));
+    const img=it.img||PLACEHOLDERS[it.cat]||'';
+    return `<label class="copy-row${dup?' dup':''}">
+      <input type="checkbox" data-cid="${it.id}" ${dup?'disabled':''} style="width:18px;height:18px;accent-color:var(--teal)"/>
+      <img class="ithumb" src="${esc(img)}" alt="" onerror="this.style.display='none'"/>
+      <span style="font-weight:600">${esc(it.name)}</span>
+      <span class="ccat">${esc(cleanCat(it.cat))}</span>
+      ${dup?'<span class="sbadge ret">כבר קיים</span>':''}
+    </label>`;
+  }).join('');
+  document.getElementById('copy-controls').classList.toggle('hidden',!copySourceItems.length);
+  document.getElementById('copy-all').checked=false;
+  updateCopyCount();
+}
+const selectedCopyIds=()=>[...document.querySelectorAll('#copy-list input[data-cid]:checked')].map(i=>i.dataset.cid);
+function updateCopyCount(){
+  const n=selectedCopyIds().length;
+  const btn=document.getElementById('btn-copy-items');
+  btn.textContent=`העתק נבחרים (${n})`;
+  btn.disabled=n===0;
+}
+async function copySelectedItems(){
+  const ids=new Set(selectedCopyIds());
+  const taken=new Set(items.map(i=>normName(i.name)));
+  const chosen=[];let skipped=0;
+  copySourceItems.filter(i=>ids.has(i.id)).forEach(i=>{
+    const k=normName(i.name);
+    if(taken.has(k)){skipped++;return;}
+    taken.add(k);chosen.push(i);
+  });
+  if(!chosen.length){alert('אין פריטים חדשים להעתקה.');return;}
+  const btn=document.getElementById('btn-copy-items');
+  btn.disabled=true;copyStatus('מעתיק...',true);
+  let copied=0;
+  try{
+    // A commit is limited to 500 writes and about 10MB, and items carry
+    // their image inline - so cut batches by count AND by approximate size.
+    let batch=writeBatch(db),count=0,bytes=0,pending=[];
+    const flush=async()=>{
+      if(!count)return;
+      await batch.commit();
+      pending.forEach(p=>items.push(p));
+      copied+=count;
+      batch=writeBatch(db);count=0;bytes=0;pending=[];
+    };
+    for(const it of chosen){
+      const data={name:it.name,desc:it.desc||'',cat:it.cat,img:it.img||'',kitWe:it.kitWe||'',kitYou:it.kitYou||'',available:true,branch:BRANCH};
+      const size=JSON.stringify(data).length;
+      if(count>=400||(count&&bytes+size>6000000))await flush();
+      const ref=doc(collection(db,'items'));
+      batch.set(ref,data);
+      pending.push({id:ref.id,...data});
+      count++;bytes+=size;
+    }
+    await flush();
+    copyStatus(`✓ הועתקו ${copied} פריטים`+(skipped?` (${skipped} דולגו - אותו שם כבר נבחר/קיים)`:''),true);
+  }catch(e){
+    copyStatus(copied?`הועתקו ${copied} פריטים לפני שהתרחשה שגיאה`:'',false);
+    alert(logAndMessage(e,`שגיאה בהעתקת הפריטים. הועתקו ${copied} מתוך ${chosen.length}. אפשר ללחוץ שוב - פריטים שכבר הועתקו יסומנו "כבר קיים".`));
+  }finally{
+    renderAdminItems();renderGrid();renderCopyList();
   }
 }
 
@@ -1178,12 +1442,12 @@ document.getElementById('nav-home-brand')?.addEventListener('click',e=>{e.preven
 
 document.getElementById('nav-catalog-btn')?.addEventListener('click',()=>{showPage('home');setTimeout(()=>document.getElementById('cat-sec').scrollIntoView({behavior:'smooth'}),100);});
 document.getElementById('nav-about')?.addEventListener('click',()=>showPage('about'));
-document.getElementById('nav-borrow-btn')?.addEventListener('click',()=>{showPage('home');showSection('borrow');});
+document.getElementById('nav-borrow-btn')?.addEventListener('click',goBorrow);
 document.getElementById('nav-return-btn')?.addEventListener('click',()=>{showPage('home');showSection('return');});
 document.getElementById('btn-to-catalog')?.addEventListener('click',()=>document.getElementById('how-sec').scrollIntoView({behavior:'smooth'}));
-document.getElementById('btn-borrow-main')?.addEventListener('click',()=>showSection('borrow'));
+document.getElementById('btn-borrow-main')?.addEventListener('click',goBorrow);
 document.getElementById('btn-return-main')?.addEventListener('click',()=>showSection('return'));
-document.getElementById('link-borrow')?.addEventListener('click',()=>showSection('borrow'));
+document.getElementById('link-borrow')?.addEventListener('click',goBorrow);
 document.getElementById('link-return')?.addEventListener('click',()=>showSection('return'));
 document.getElementById('btn-admin')?.addEventListener('click',()=>showPage('admin'));
 document.getElementById('btn-admin-about')?.addEventListener('click',()=>showPage('admin'));
@@ -1214,26 +1478,20 @@ document.getElementById('tab-stats')?.addEventListener('click',()=>setAdminTab('
 document.getElementById('tab-messages')?.addEventListener('click',()=>setAdminTab('messages'));
 document.getElementById('btn-clear-all-messages')?.addEventListener('click',clearAllMessages);
 document.getElementById('tab-reviews')?.addEventListener('click',()=>setAdminTab('reviews'));
+document.getElementById('tab-settings')?.addEventListener('click',()=>setAdminTab('settings'));
+document.getElementById('btn-save-settings')?.addEventListener('click',saveBranchSettings);
+document.getElementById('copy-source')?.addEventListener('change',loadCopySource);
+document.getElementById('copy-list')?.addEventListener('change',updateCopyCount);
+document.getElementById('copy-all')?.addEventListener('change',e=>{document.querySelectorAll('#copy-list input[data-cid]:not(:disabled)').forEach(c=>{c.checked=e.target.checked;});updateCopyCount();});
+document.getElementById('btn-copy-items')?.addEventListener('click',copySelectedItems);
 document.getElementById('btn-preview-migration')?.addEventListener('click',previewAvailabilityMigration);
 document.getElementById('btn-seed-branches')?.addEventListener('click',previewBranchSeed);
 
-document.getElementById('btn-submit-borrow')?.addEventListener('click',submitBorrow);
-document.getElementById('borrow-search')?.addEventListener('input',e=>renderBorrowGrid(e.target.value));
-document.getElementById('btn-cancel-borrow')?.addEventListener('click',()=>showSection(null));
-document.getElementById('btn-change-item')?.addEventListener('click',()=>{
-  document.getElementById('borrow-form-wrap').classList.add('hidden');
-  document.getElementById('borrow-items-grid').classList.remove('hidden');
-  const searchWrap=document.getElementById('borrow-search-wrap');
-  if(searchWrap) searchWrap.style.display='';
-  renderBorrowGrid();
-});
-document.getElementById('btn-change-item')?.addEventListener('click',()=>{
-  document.getElementById('borrow-form-wrap').classList.add('hidden');
-  document.getElementById('borrow-items-grid').classList.remove('hidden');
-  const searchWrap=document.getElementById('borrow-search-wrap');
-  if(searchWrap) searchWrap.style.display='';
-  renderBorrowGrid();
-});
+document.getElementById('basket-bar')?.addEventListener('click',openBasketForm);
+document.getElementById('basket-bar')?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openBasketForm();}});
+document.getElementById('btn-submit-basket')?.addEventListener('click',submitBasket);
+document.getElementById('btn-cancel-basket')?.addEventListener('click',()=>showSection(null));
+document.getElementById('catalog-search')?.addEventListener('input',e=>setSearch(e.target.value));
 document.getElementById('btn-back-from-borrow')?.addEventListener('click',()=>showSection(null));
 document.getElementById('btn-send-msg')?.addEventListener('click',sendMessage);
 document.getElementById('btn-send-review')?.addEventListener('click',sendReview);
@@ -1241,7 +1499,7 @@ document.getElementById('btn-skip-review')?.addEventListener('click',skipReview)
 document.getElementById('btn-cancel-return')?.addEventListener('click',()=>showSection(null));
 document.getElementById('modal-overlay')?.addEventListener('click',e=>{if(e.target===document.getElementById('modal-overlay')){document.getElementById('modal-overlay').classList.add('hidden');document.body.style.overflow='';} });
 document.getElementById('modal-close-btn')?.addEventListener('click',()=>{document.getElementById('modal-overlay').classList.add('hidden');document.body.style.overflow='';});
-document.getElementById('modal-borrow-btn')?.addEventListener('click',()=>{if(!modalItem||isAvailable(modalItem)!=='av')return;document.getElementById('modal-overlay').classList.add('hidden');document.body.style.overflow='';openBorrowFromCard(modalItem.id);});
+document.getElementById('modal-borrow-btn')?.addEventListener('click',()=>{if(modalItem)toggleBasket(modalItem.id);});
 document.getElementById('edit-overlay')?.addEventListener('click',e=>{if(e.target===document.getElementById('edit-overlay')){const n=document.getElementById('edit-name').value.trim();if(n){if(confirm('יש שינויים שלא נשמרו. לסגור?'))closeEdit();}else closeEdit();}});
 document.getElementById('edit-close-btn')?.addEventListener('click',()=>{const n=document.getElementById('edit-name').value.trim();if(n){if(confirm('יש שינויים שלא נשמרו. לסגור?'))closeEdit();}else closeEdit();});
 document.getElementById('edit-save-btn')?.addEventListener('click',saveEdit);
